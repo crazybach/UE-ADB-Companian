@@ -17,6 +17,7 @@ interface ElectronAPI {
   launchActivity: (activity: string, params: string) => Promise<AdbResult>
   captureScreenshot: () => Promise<AdbResult<{ filename: string; localPath: string }>>
   listScreenshots: () => Promise<AdbResult<{ files: ScreenshotFile[] }>>
+  getScreenshotDataUrl: (screenshotPath: string) => Promise<AdbResult<{ dataUrl: string }>>
   getScreenshotPath: () => Promise<string>
   getDataPath: () => Promise<string>
 

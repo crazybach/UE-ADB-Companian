@@ -14,6 +14,8 @@ const electronAPI = {
     ipcRenderer.invoke('adb:launch-activity', activity, params),
   captureScreenshot: () => ipcRenderer.invoke('adb:capture-screenshot'),
   listScreenshots: () => ipcRenderer.invoke('adb:list-screenshots'),
+  getScreenshotDataUrl: (screenshotPath: string) =>
+    ipcRenderer.invoke('adb:get-screenshot-data-url', screenshotPath),
   getScreenshotPath: () => ipcRenderer.invoke('adb:get-screenshot-path'),
   getDataPath: () => ipcRenderer.invoke('adb:get-data-path'),
 

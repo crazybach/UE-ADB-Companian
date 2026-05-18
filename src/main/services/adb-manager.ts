@@ -229,7 +229,15 @@ export class AdbManager extends EventEmitter {
 
   async captureScreenshot(deviceSerial?: string): Promise<AdbResult<{ filename: string; localPath: string }>> {
     const now = new Date()
-    const dateStr = now.toISOString().replace(/[-:T]/g, '').slice(0, 15).replace(/(\d{8})(\d{6})/, '$1_$2')
+    const dateStr = [
+      now.getFullYear().toString(),
+      (now.getMonth() + 1).toString().padStart(2, '0'),
+      now.getDate().toString().padStart(2, '0'),
+      '_',
+      now.getHours().toString().padStart(2, '0'),
+      now.getMinutes().toString().padStart(2, '0'),
+      now.getSeconds().toString().padStart(2, '0'),
+    ].join('')
     const serial = deviceSerial || 'device'
     const filename = `${serial}_${dateStr}.png`
     const remotePath = `/sdcard/${filename}`
@@ -253,14 +261,14 @@ export class AdbManager extends EventEmitter {
     return this.execCommand(`adb shell rm ${remotePath}`)
   }
 
-  listScreenshots(): { files: { name: string; device: string; date: string; path: string }[] } {
+  listScreenshots(): AdbResult<{ files: { name: string; device: string; date: string; path: string }[] }> {
     const files: { name: string; device: string; date: string; path: string }[] = []
-    if (!fs.existsSync(this.screenshotDir)) return { files }
+    if (!fs.existsSync(this.screenshotDir)) return { success: true, data: { files } }
 
     const entries = fs.readdirSync(this.screenshotDir)
     for (const entry of entries) {
       if (!entry.endsWith('.png')) continue
-      const match = entry.match(/^(.+)_(\d{8})_(\d{6})\.png$/)
+      const match = entry.match(/^(.+)_(\d{8})_(\d{6})\.?\.png$/)
       if (match) {
         files.push({
           name: entry,
@@ -272,7 +280,24 @@ export class AdbManager extends EventEmitter {
     }
 
     files.sort((a, b) => b.name.localeCompare(a.name))
-    return { files }
+    return { success: true, data: { files } }
+  }
+
+  getScreenshotDataUrl(screenshotPath: string): AdbResult<{ dataUrl: string }> {
+    const root = path.resolve(this.screenshotDir)
+    const target = path.resolve(screenshotPath)
+    const relative = path.relative(root, target)
+
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return { success: false, error: 'Screenshot path is outside screenshot directory' }
+    }
+
+    if (!target.toLowerCase().endsWith('.png') || !fs.existsSync(target)) {
+      return { success: false, error: 'Screenshot file not found' }
+    }
+
+    const data = fs.readFileSync(target).toString('base64')
+    return { success: true, data: { dataUrl: `data:image/png;base64,${data}` } }
   }
 
   getScreenshotDir(): string {

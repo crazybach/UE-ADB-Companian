@@ -206,6 +206,10 @@ function setupIpcHandlers(): void {
     return adbManager.listScreenshots()
   })
 
+  ipcMain.handle('adb:get-screenshot-data-url', async (_event, screenshotPath: string) => {
+    return adbManager.getScreenshotDataUrl(screenshotPath)
+  })
+
   ipcMain.handle('adb:get-screenshot-path', async () => {
     return adbManager.getScreenshotDir()
   })
