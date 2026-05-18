@@ -10,8 +10,5 @@ export default defineConfig({
   },
   renderer: {
     plugins: [react()],
-    build: {
-      outDir: 'dist',
-    },
   },
 })
