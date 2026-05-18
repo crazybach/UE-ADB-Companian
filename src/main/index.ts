@@ -16,7 +16,7 @@ type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 let connectionStatus: ConnectionState = 'disconnected'
 let connectedDevice: string | null = null
 
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
+const isDev = process.env.NODE_ENV === 'development'
 
 function getPreloadPath(): string {
   return path.join(__dirname, '..', 'preload', 'index.js')
@@ -30,15 +30,30 @@ function getRendererUrl(hash: string = ''): string {
 }
 
 function getDataPath(): string {
-  if (isDev) {
-    return path.join(__dirname, '..', '..', 'src', 'data')
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'data')
   }
-  return path.join(process.resourcesPath, 'data')
+  return path.join(__dirname, '..', '..', 'src', 'data')
 }
 
 function getConfigPath(): string {
   const configDir = path.join(app.getPath('home'), '.ue_console_adb')
   return path.join(configDir, 'app_config.json')
+}
+
+async function loadWithRetry(win: BrowserWindow, url: string, retries = 10, delay = 500): Promise<void> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await win.loadURL(url)
+      return
+    } catch {
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delay))
+      }
+    }
+  }
+  // Last attempt — let it throw if it fails
+  await win.loadURL(url)
 }
 
 function broadcastStatus(): void {
@@ -65,8 +80,8 @@ function createMainWindow(): void {
     },
   })
 
-  mainWindow.loadURL(getRendererUrl())
   mainWindow.setMenuBarVisibility(false)
+  loadWithRetry(mainWindow, getRendererUrl())
 
   if (process.platform === 'win32') {
     try {
@@ -96,8 +111,8 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     },
   })
 
-  win.loadURL(getRendererUrl(hash))
   win.setMenuBarVisibility(false)
+  loadWithRetry(win, getRendererUrl(hash))
 
   win.on('closed', () => {
     if (win === captureWindow) captureWindow = null
