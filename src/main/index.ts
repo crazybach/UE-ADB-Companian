@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
+import { DeviceMonitor } from './services/device-monitor'
 
 let mainWindow: BrowserWindow | null = null
 let captureWindow: BrowserWindow | null = null
@@ -9,6 +10,11 @@ let paletteWindow: BrowserWindow | null = null
 let previewWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
+let deviceMonitor: DeviceMonitor
+
+type ConnectionState = 'disconnected' | 'connecting' | 'connected'
+let connectionStatus: ConnectionState = 'disconnected'
+let connectedDevice: string | null = null
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
@@ -35,6 +41,14 @@ function getConfigPath(): string {
   return path.join(configDir, 'app_config.json')
 }
 
+function broadcastStatus(): void {
+  const payload = { status: connectionStatus, device: connectedDevice }
+  mainWindow?.webContents.send('adb:connection-status', payload)
+  captureWindow?.webContents.send('adb:connection-status', payload)
+  paletteWindow?.webContents.send('adb:connection-status', payload)
+  previewWindow?.webContents.send('adb:connection-status', payload)
+}
+
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -54,16 +68,12 @@ function createMainWindow(): void {
   mainWindow.loadURL(getRendererUrl())
   mainWindow.setMenuBarVisibility(false)
 
-  // Apply dark title bar on Windows
   if (process.platform === 'win32') {
     try {
-      const hwnd = mainWindow.getNativeWindowHandle()
-      const DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-      // Dynamic import for Windows-specific API
       const { setWindowDarkMode } = require('./services/win32-utils')
-      setWindowDarkMode(hwnd)
+      setWindowDarkMode(mainWindow.getNativeWindowHandle())
     } catch {
-      // Non-Windows or optional feature
+      // Non-critical
     }
   }
 
@@ -98,12 +108,61 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
   return win
 }
 
+// ── Connection Management ─────────────────────────────────
+
+function tryAutoConnect(deviceSerial?: string): void {
+  if (connectionStatus === 'connected' || connectionStatus === 'connecting') return
+  if (!deviceMonitor.hasDevice()) return
+
+  connectionStatus = 'connecting'
+  connectedDevice = deviceSerial || deviceMonitor.getDevices().find((d) => d.state === 'device')?.serial || null
+  broadcastStatus()
+
+  adbManager.startLogcat()
+}
+
+function handleDeviceAppeared(): void {
+  tryAutoConnect()
+}
+
+function handleDeviceDisappeared(): void {
+  if (connectionStatus === 'connected' || connectionStatus === 'connecting') {
+    adbManager.stopLogcat()
+    connectionStatus = 'disconnected'
+    connectedDevice = null
+    broadcastStatus()
+  }
+}
+
+function doConnect(): { success: boolean; status: string; device?: string } {
+  if (connectionStatus === 'connected') {
+    return { success: true, status: 'connected', device: connectedDevice || undefined }
+  }
+
+  if (!deviceMonitor.hasDevice()) {
+    return { success: false, status: 'disconnected' }
+  }
+
+  tryAutoConnect()
+  return { success: true, status: connectionStatus, device: connectedDevice || undefined }
+}
+
 // ── IPC Handlers ──────────────────────────────────────────
 
 function setupIpcHandlers(): void {
   const screenshotDir = path.join(app.getPath('userData'), 'ScreenShots')
   fs.mkdirSync(screenshotDir, { recursive: true })
   adbManager = new AdbManager(screenshotDir)
+
+  // ── Connection ──
+
+  ipcMain.handle('adb:connect', async () => {
+    return doConnect()
+  })
+
+  ipcMain.handle('adb:get-status', async () => {
+    return { status: connectionStatus, device: connectedDevice }
+  })
 
   // ── ADB Commands ──
 
@@ -178,7 +237,7 @@ function setupIpcHandlers(): void {
     adbManager.stopLogcat()
   })
 
-  // Forward logcat events to the renderer
+  // Forward logcat events to all windows
   adbManager.on('batch', (lines: string[]) => {
     mainWindow?.webContents.send('logcat:batch', lines)
     captureWindow?.webContents.send('logcat:batch', lines)
@@ -186,14 +245,32 @@ function setupIpcHandlers(): void {
     previewWindow?.webContents.send('logcat:batch', lines)
   })
 
-  adbManager.on('status', (status: string, code?: string) => {
-    const payload = { status, code }
-    mainWindow?.webContents.send('logcat:status', payload)
+  adbManager.on('status', (status: string) => {
+    if (status === 'started') {
+      connectionStatus = 'connected'
+      broadcastStatus()
+    } else if (status === 'stopped') {
+      // Only set disconnected if logcat was intentionally stopped (not by device loss)
+      // Device loss is handled by handleDeviceDisappeared
+      if (!deviceMonitor.hasDevice()) {
+        connectionStatus = 'disconnected'
+        connectedDevice = null
+        broadcastStatus()
+      }
+    }
+    mainWindow?.webContents.send('logcat:status', { status })
   })
 
   adbManager.on('error', (message: string) => {
     mainWindow?.webContents.send('logcat:error', message)
   })
+
+  // ── Device Monitor ──
+
+  deviceMonitor = new DeviceMonitor(2000)
+  deviceMonitor.on('device-appeared', handleDeviceAppeared)
+  deviceMonitor.on('device-disappeared', handleDeviceDisappeared)
+  deviceMonitor.start()
 
   // ── Windows ──
 
@@ -237,6 +314,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   adbManager?.stopLogcat()
+  deviceMonitor?.stop()
   if (process.platform !== 'darwin') {
     app.quit()
   }
@@ -244,4 +322,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   adbManager?.stopLogcat()
+  deviceMonitor?.stop()
 })

@@ -1,10 +1,29 @@
 import { useCallback } from 'react'
+import { useAppStore } from '../../stores/app-store'
 import styles from './MenuBar.module.css'
 
 export default function MenuBar() {
+  const connectionStatus = useAppStore((s) => s.connectionStatus)
+  const connectedDevice = useAppStore((s) => s.connectedDevice)
+
   const handleOpenCapture = useCallback(() => window.electronAPI.openCaptureWindow(), [])
   const handleOpenPalette = useCallback(() => window.electronAPI.openPaletteWindow(), [])
   const handleOpenPreview = useCallback(() => window.electronAPI.openPreviewWindow(), [])
+  const handleConnect = useCallback(async () => {
+    if (connectionStatus !== 'disconnected') return
+    try {
+      await window.electronAPI.connect()
+    } catch { /* IPC error */ }
+  }, [connectionStatus])
+
+  const isConnected = connectionStatus === 'connected'
+
+  const dotColor =
+    connectionStatus === 'connected'
+      ? '#4ec9b0'
+      : connectionStatus === 'connecting'
+        ? '#dcdcaa'
+        : '#f44747'
 
   return (
     <div className={styles.menuBar}>
@@ -23,9 +42,27 @@ export default function MenuBar() {
           <button className={styles.dropdownItem} onClick={handleOpenPreview}>
             Local Preview
           </button>
+          <div className={styles.divider} />
+          <button
+            className={styles.dropdownItem}
+            onClick={handleConnect}
+            disabled={isConnected}
+          >
+            {connectionStatus === 'connecting' ? 'Connecting...' : 'Connect'}
+          </button>
         </div>
       </div>
       <div className={styles.title}>UE Console ADB Tool</div>
+      <div className={styles.status}>
+        <span style={{ color: dotColor }}>●</span>
+        <span>
+          {isConnected
+            ? connectedDevice || 'connected'
+            : connectionStatus === 'connecting'
+              ? 'Connecting...'
+              : 'No device'}
+        </span>
+      </div>
     </div>
   )
 }

@@ -2,9 +2,12 @@ import { create } from 'zustand'
 import type { AppConfig } from '../types/config'
 import { DEFAULT_COLUMNS } from '../types/log'
 
+type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
+
 interface AppStore {
   // Connection status
-  adbConnected: boolean
+  connectionStatus: ConnectionStatus
+  connectedDevice: string | null
   logcatRunning: boolean
 
   // Config
@@ -15,7 +18,7 @@ interface AppStore {
   commandHistory: string[]
 
   // Actions
-  setAdbConnected: (v: boolean) => void
+  setConnectionStatus: (status: ConnectionStatus, device?: string | null) => void
   setLogcatRunning: (v: boolean) => void
   setConfig: (config: Partial<AppConfig>) => void
   setConfigLoaded: (v: boolean) => void
@@ -23,7 +26,8 @@ interface AppStore {
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
-  adbConnected: false,
+  connectionStatus: 'disconnected',
+  connectedDevice: null,
   logcatRunning: false,
   configLoaded: false,
   config: {
@@ -36,7 +40,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   commandHistory: [],
 
-  setAdbConnected: (v) => set({ adbConnected: v }),
+  setConnectionStatus: (status, device = null) =>
+    set({ connectionStatus: status, connectedDevice: device }),
   setLogcatRunning: (v) => set({ logcatRunning: v }),
 
   setConfig: (partial) =>

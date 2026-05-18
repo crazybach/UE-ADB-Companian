@@ -1,0 +1,28 @@
+.bar {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  font-size: var(--font-size-sm);
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dot {
+  font-size: 8px;
+  flex-shrink: 0;
+}
+
+.status {
+  color: var(--fg-primary);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.logCount {
+  color: var(--fg-muted);
+}

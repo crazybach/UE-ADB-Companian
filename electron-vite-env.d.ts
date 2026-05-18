@@ -5,17 +5,24 @@ declare module '*.module.css' {
   export default classes
 }
 
+interface ConnectionStatusPayload {
+  status: 'disconnected' | 'connecting' | 'connected'
+  device: string | null
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
   listActivities: (pkg: string) => Promise<AdbResult<{ activities: string[] }>>
   launchActivity: (activity: string, params: string) => Promise<AdbResult>
   captureScreenshot: () => Promise<AdbResult<{ filename: string; localPath: string }>>
-  pullScreenshot: (remotePath: string) => Promise<AdbResult<{ localPath: string }>>
-  deleteRemoteFile: (remotePath: string) => Promise<AdbResult>
   listScreenshots: () => Promise<AdbResult<{ files: ScreenshotFile[] }>>
   getScreenshotPath: () => Promise<string>
   getDataPath: () => Promise<string>
+
+  connect: () => Promise<{ success: boolean; status: string; device?: string }>
+  getConnectionStatus: () => Promise<{ status: string; device: string | null }>
+  onConnectionStatus: (callback: (payload: ConnectionStatusPayload) => void) => () => void
 
   configLoad: () => Promise<AppConfig>
   configSave: (config: Partial<AppConfig>) => Promise<void>
@@ -26,6 +33,7 @@ interface ElectronAPI {
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void
+  onLogcatError: (callback: (message: string) => void) => () => void
 
   startLogcat: () => Promise<void>
   stopLogcat: () => Promise<void>

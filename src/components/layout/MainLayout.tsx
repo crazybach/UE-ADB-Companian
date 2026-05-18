@@ -1,8 +1,9 @@
-import { useRef, useCallback } from 'react'
+import { useCallback } from 'react'
 import ActivityLaunchSection from '../activity/ActivityLaunchSection'
 import CommandSection from '../command/CommandSection'
 import FilterSection from '../log/FilterSection'
 import LogDisplay from '../log/LogDisplay'
+import StatusBar from './StatusBar'
 import styles from './MainLayout.module.css'
 
 interface MainLayoutProps {
@@ -10,8 +11,6 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ onOpenClick }: MainLayoutProps) {
-  const commandInputRef = useRef<HTMLInputElement>(null)
-
   const handleSendCommand = useCallback((cmd: string) => {
     window.electronAPI.sendCommand(cmd)
   }, [])
@@ -24,6 +23,7 @@ export default function MainLayout({ onOpenClick }: MainLayoutProps) {
       </div>
       <FilterSection />
       <LogDisplay />
+      <StatusBar />
     </div>
   )
 }

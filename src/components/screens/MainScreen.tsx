@@ -6,11 +6,13 @@ import ActivitySelectDialog from '../dialogs/ActivitySelectDialog'
 import { useLogStream } from '../../hooks/use-log-stream'
 import { useConfig } from '../../hooks/use-config'
 import { useConfigSync } from '../../hooks/use-config-sync'
+import { useConnectionMonitor } from '../../hooks/use-connection-monitor'
 
 export default function MainScreen() {
   useLogStream()
   useConfig()
   useConfigSync()
+  useConnectionMonitor()
 
   const [packageDialogOpen, setPackageDialogOpen] = useState(false)
   const [activityDialogOpen, setActivityDialogOpen] = useState(false)

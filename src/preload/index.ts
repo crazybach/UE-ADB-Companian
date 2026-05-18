@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+interface ConnectionStatusPayload {
+  status: 'disconnected' | 'connecting' | 'connected'
+  device: string | null
+}
+
 const electronAPI = {
   // ADB commands
   sendCommand: (cmd: string) => ipcRenderer.invoke('adb:send-command', cmd),
@@ -11,6 +16,17 @@ const electronAPI = {
   listScreenshots: () => ipcRenderer.invoke('adb:list-screenshots'),
   getScreenshotPath: () => ipcRenderer.invoke('adb:get-screenshot-path'),
   getDataPath: () => ipcRenderer.invoke('adb:get-data-path'),
+
+  // Connection
+  connect: () => ipcRenderer.invoke('adb:connect'),
+  getConnectionStatus: () => ipcRenderer.invoke('adb:get-status'),
+
+  onConnectionStatus: (callback: (payload: ConnectionStatusPayload) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, payload: ConnectionStatusPayload) =>
+      callback(payload)
+    ipcRenderer.on('adb:connection-status', handler)
+    return () => ipcRenderer.removeListener('adb:connection-status', handler)
+  },
 
   // Config
   configLoad: () => ipcRenderer.invoke('config:load'),

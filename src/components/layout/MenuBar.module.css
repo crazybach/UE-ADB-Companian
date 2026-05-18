@@ -48,9 +48,20 @@
   font-size: var(--font-size-sm);
   border: none;
 }
-.dropdownItem:hover {
+.dropdownItem:hover:not(:disabled) {
   background: var(--bg-hover);
   color: var(--fg-bright);
+}
+
+.dropdownItem:disabled {
+  color: var(--fg-muted);
+  cursor: default;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-primary);
+  margin: 4px 8px;
 }
 
 .title {
@@ -59,4 +70,14 @@
   color: var(--fg-muted);
   font-size: var(--font-size-sm);
   pointer-events: none;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-sm);
+  color: var(--fg-muted);
+  padding-right: 4px;
+  font-size: 10px;
 }
