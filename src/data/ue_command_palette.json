@@ -1,0 +1,88 @@
+{
+  "commands": [
+    {
+      "Category": "Visible Control",
+      "Name": "Static Meshes",
+      "Command": "Showflag.staticmeshes",
+      "Default State": "1",
+      "Description": "Show and hide staticmeshes"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Skeletal Meshes",
+      "Command": "Showflag.skeletalmeshes",
+      "Default State": "1",
+      "Description": "Show and hide skeletalmeshes"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Decals",
+      "Command": "showflag.decals",
+      "Default State": "1",
+      "Description": "Show and hide decals"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Niagara",
+      "Command": "ShowFlag.Niagara",
+      "Default State": "1",
+      "Description": "Show and hide Niagara particle effects"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Translucency",
+      "Command": "ShowFlag.Translucency",
+      "Default State": "1",
+      "Description": "Show and hide translucent materials"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Dynamic Shadows",
+      "Command": "ShowFlag.DynamicShadows",
+      "Default State": "1",
+      "Description": "Show and hide dynamic shadows"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Post Processing",
+      "Command": "ShowFlag.PostProcessing",
+      "Default State": "1",
+      "Description": "Show and hide post processing effects"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Post Process Material",
+      "Command": "ShowFlag.PostProcessMaterial",
+      "Default State": "1",
+      "Description": "Show and hide post process materials"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "Materials",
+      "Command": "ShowFlag.Materials",
+      "Default State": "1",
+      "Description": "Show and hide materials"
+    },
+    {
+      "Category": "Visible Control",
+      "Name": "On Screen Debug",
+      "Command": "ShowFlag.OnScreenDebug",
+      "Default State": "1",
+      "Description": "Show and hide on screen debug information"
+    },
+    {
+      "Category": "UI",
+      "Name": "HUD",
+      "Command": "Slate.GameLayer.ViewportSlotVisible",
+      "Default State": "1",
+      "Description": "Show and hide Player's HUD"
+    },
+    {
+      "Category": "UI",
+      "Name": "Info Widgets",
+      "Command": "Slate.GameLayer.PlayerCanvasVisible",
+      "Default State": "1",
+      "Description": "Show and hide Player's head widgets"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+/// <reference types="vite/client" />
+
+declare module '*.module.css' {
+  const classes: { readonly [key: string]: string }
+  export default classes
+}
+
+interface ElectronAPI {
+  sendCommand: (cmd: string) => Promise<AdbResult>
+  listPackages: () => Promise<AdbResult<{ packages: string[] }>>
+  listActivities: (pkg: string) => Promise<AdbResult<{ activities: string[] }>>
+  launchActivity: (activity: string, params: string) => Promise<AdbResult>
+  captureScreenshot: () => Promise<AdbResult<{ filename: string; localPath: string }>>
+  pullScreenshot: (remotePath: string) => Promise<AdbResult<{ localPath: string }>>
+  deleteRemoteFile: (remotePath: string) => Promise<AdbResult>
+  listScreenshots: () => Promise<AdbResult<{ files: ScreenshotFile[] }>>
+  getScreenshotPath: () => Promise<string>
+  getDataPath: () => Promise<string>
+
+  configLoad: () => Promise<AppConfig>
+  configSave: (config: Partial<AppConfig>) => Promise<void>
+
+  openCaptureWindow: () => Promise<void>
+  openPaletteWindow: () => Promise<void>
+  openPreviewWindow: () => Promise<void>
+
+  onLogcatBatch: (callback: (lines: string[]) => void) => () => void
+  onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void
+
+  startLogcat: () => Promise<void>
+  stopLogcat: () => Promise<void>
+}
+
+interface Window {
+  electronAPI: ElectronAPI
+}

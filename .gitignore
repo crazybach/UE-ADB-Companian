@@ -1,0 +1,17 @@
+node_modules/
+dist/
+out/
+release/
+*.log
+.DS_Store
+thumbs.db
+.claude/
+
+# Old Python project (not part of this build)
+src/ue_console_adb/
+src/ue_console_adb.py
+src/Save/
+tests/
+__pycache__/
+*.pyc
+.trae/

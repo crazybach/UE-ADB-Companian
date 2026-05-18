@@ -1,0 +1,35 @@
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--fg-muted);
+  min-width: 55px;
+  padding-top: 4px;
+}
+
+.inputWrapper {
+  flex: 1;
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  height: var(--input-height);
+  border-radius: 3px;
+}
+
+.sendBtn {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  padding: 3px 14px;
+  border-radius: 3px;
+  height: var(--input-height);
+  font-size: var(--font-size-sm);
+}
+.sendBtn:hover {
+  background: var(--btn-bg-hover);
+}

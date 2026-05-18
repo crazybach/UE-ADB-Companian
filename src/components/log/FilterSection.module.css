@@ -1,0 +1,68 @@
+.container {
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.textFilter {
+  flex: 1;
+  height: 24px;
+  font-size: var(--font-size-sm);
+  border-radius: 3px;
+}
+
+.clearBtn {
+  background: var(--bg-tertiary);
+  color: var(--fg-primary);
+  border: 1px solid var(--border-primary);
+  padding: 2px 10px;
+  border-radius: 3px;
+  font-size: var(--font-size-sm);
+  height: 24px;
+}
+.clearBtn:hover {
+  background: var(--bg-hover);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.levelLabel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--fg-muted);
+}
+.levelLabel:hover {
+  color: var(--fg-primary);
+}
+
+.levelDot {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--fg-muted);
+}
+.checkLabel:hover {
+  color: var(--fg-primary);
+}

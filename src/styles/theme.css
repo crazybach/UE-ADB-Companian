@@ -1,0 +1,64 @@
+:root {
+  /* Base */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d30;
+  --bg-hover: #3e3e42;
+  --bg-active: #094771;
+  --bg-input: #3c3c3c;
+  --bg-dropdown: #2d2d30;
+  --fg-primary: #d4d4d4;
+  --fg-secondary: #cccccc;
+  --fg-muted: #858585;
+  --fg-bright: #ffffff;
+
+  /* Borders */
+  --border-primary: #3e3e42;
+  --border-focus: #007acc;
+
+  /* Log levels */
+  --log-verbose: #b0b0b0;
+  --log-debug: #569cd6;
+  --log-info: #4ec9b0;
+  --log-warning: #dcdcaa;
+  --log-error: #f44747;
+  --log-fatal: #8b0000;
+  --log-silent: #d4d4d4;
+
+  /* UE log sub-levels */
+  --ue-error: #f44747;
+  --ue-warning: #dcdcaa;
+  --ue-info: #4ec9b0;
+  --ue-debug: #569cd6;
+  --ue-verbose: #b0b0b0;
+  --ue-fatal: #ff6b6b;
+
+  /* Buttons */
+  --btn-bg: #0e639c;
+  --btn-bg-hover: #1177bb;
+  --btn-bg-active: #0d5689;
+  --btn-fg: #ffffff;
+  --btn-danger-bg: #a1260d;
+  --btn-danger-hover: #c42b1c;
+
+  /* Scrollbar */
+  --scrollbar-bg: #1e1e1e;
+  --scrollbar-thumb: #424242;
+  --scrollbar-thumb-hover: #4f4f4f;
+
+  /* Checkbox */
+  --checkbox-bg: #3c3c3c;
+  --checkbox-checked: #007acc;
+
+  /* Font */
+  --font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  --font-size: 12px;
+  --font-size-sm: 11px;
+  --line-height: 1.5;
+
+  /* Sizing */
+  --header-height: 28px;
+  --input-height: 28px;
+  --filter-bar-height: 32px;
+  --section-gap: 6px;
+}

@@ -1,0 +1,26 @@
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-dropdown);
+  border: 1px solid var(--border-primary);
+  border-radius: 0 0 3px 3px;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.item {
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item:hover, .item.selected {
+  background: var(--bg-active);
+  color: var(--fg-bright);
+}

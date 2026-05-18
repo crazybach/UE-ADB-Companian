@@ -1,0 +1,42 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--fg-muted);
+  min-width: 55px;
+}
+
+.input {
+  flex: 1;
+  height: var(--input-height);
+  border-radius: 3px;
+}
+
+.btn {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  padding: 3px 14px;
+  border-radius: 3px;
+  height: var(--input-height);
+  font-size: var(--font-size-sm);
+}
+.btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+.btnSecondary {
+  background: var(--bg-tertiary);
+  color: var(--fg-primary);
+  border: 1px solid var(--border-primary);
+  padding: 3px 14px;
+  border-radius: 3px;
+  height: var(--input-height);
+  font-size: var(--font-size-sm);
+}
+.btnSecondary:hover {
+  background: var(--bg-hover);
+}

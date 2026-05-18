@@ -1,0 +1,225 @@
+{
+  "levels": [
+    {
+      "display_name": "Chicago",
+      "value": "Main_Chicago"
+    },
+    {
+      "display_name": "Dubai",
+      "value": "Main_Dubai"
+    },
+    {
+      "display_name": "Dubai02",
+      "value": "Main_Dubai02"
+    },
+    {
+      "display_name": "Chicago02",
+      "value": "Main_Chicago02"
+    },
+    {
+      "display_name": "DubaiPL",
+      "value": "Main_DubaiPL"
+    },
+    {
+      "display_name": "LasVegas",
+      "value": "Main_LasVegas"
+    },
+    {
+      "display_name": "LasVegas01",
+      "value": "Main_LasVegas01"
+    },
+    {
+      "display_name": "LasVegas02",
+      "value": "Main_LasVegas02"
+    },
+    {
+      "display_name": "Paris",
+      "value": "Main_Paris"
+    },
+    {
+      "display_name": "Paris02",
+      "value": "Main_Paris02"
+    },
+    {
+      "display_name": "Tokyo",
+      "value": "Main_Tokyo"
+    },
+    {
+      "display_name": "Tokyo02",
+      "value": "Main_Tokyo02"
+    }
+  ],
+  "tanks": [
+    {
+      "display_name": "20001",
+      "value": "20001"
+    },
+    {
+      "display_name": "20002",
+      "value": "20002"
+    },
+    {
+      "display_name": "20003",
+      "value": "20003"
+    },
+    {
+      "display_name": "20004",
+      "value": "20004"
+    },
+    {
+      "display_name": "20005",
+      "value": "20005"
+    },
+    {
+      "display_name": "20006",
+      "value": "20006"
+    },
+    {
+      "display_name": "20007",
+      "value": "20007"
+    },
+    {
+      "display_name": "20008",
+      "value": "20008"
+    },
+    {
+      "display_name": "20009",
+      "value": "20009"
+    },
+    {
+      "display_name": "20010",
+      "value": "20010"
+    },
+    {
+      "display_name": "20011",
+      "value": "20011"
+    },
+    {
+      "display_name": "20012",
+      "value": "20012"
+    },
+    {
+      "display_name": "20013",
+      "value": "20013"
+    },
+    {
+      "display_name": "20014",
+      "value": "20014"
+    },
+    {
+      "display_name": "20015",
+      "value": "20015"
+    },
+    {
+      "display_name": "20016",
+      "value": "20016"
+    },
+    {
+      "display_name": "20017",
+      "value": "20017"
+    },
+    {
+      "display_name": "20018",
+      "value": "20018"
+    },
+    {
+      "display_name": "20019",
+      "value": "20019"
+    },
+    {
+      "display_name": "20020",
+      "value": "20020"
+    },
+    {
+      "display_name": "20021",
+      "value": "20021"
+    },
+    {
+      "display_name": "20022",
+      "value": "20022"
+    },
+    {
+      "display_name": "20023",
+      "value": "20023"
+    },
+    {
+      "display_name": "20024",
+      "value": "20024"
+    },
+    {
+      "display_name": "20025",
+      "value": "20025"
+    },
+    {
+      "display_name": "20026",
+      "value": "20026"
+    },
+    {
+      "display_name": "20027",
+      "value": "20027"
+    },
+    {
+      "display_name": "20028",
+      "value": "20028"
+    },
+    {
+      "display_name": "20029",
+      "value": "20029"
+    },
+    {
+      "display_name": "20030",
+      "value": "20030"
+    },
+    {
+      "display_name": "20031",
+      "value": "20031"
+    },
+    {
+      "display_name": "20032",
+      "value": "20032"
+    },
+    {
+      "display_name": "20033",
+      "value": "20033"
+    },
+    {
+      "display_name": "20034",
+      "value": "20034"
+    },
+    {
+      "display_name": "20035",
+      "value": "20035"
+    },
+    {
+      "display_name": "20036",
+      "value": "20036"
+    },
+    {
+      "display_name": "20037",
+      "value": "20037"
+    },
+    {
+      "display_name": "20038",
+      "value": "20038"
+    },
+    {
+      "display_name": "20039",
+      "value": "20039"
+    }
+  ],
+  "skins": [
+    {
+      "display_name": "Default Skin",
+      "value": "0"
+    },
+    {
+      "display_name": "Skin 88026",
+      "value": "88026"
+    }
+  ],
+  "defaults": {
+    "level": "Main_Tokyo",
+    "tank": "20006",
+    "skin": "0"
+  }
+}

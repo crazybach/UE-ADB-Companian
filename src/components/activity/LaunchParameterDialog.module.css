@@ -1,0 +1,86 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 16px;
+  min-width: 400px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.title {
+  font-weight: 600;
+  color: var(--fg-bright);
+  margin-bottom: 8px;
+}
+
+.activityName {
+  color: var(--log-info);
+  font-size: var(--font-size-sm);
+  margin-bottom: 12px;
+  word-break: break-all;
+}
+
+.inputRow {
+  margin-bottom: 8px;
+}
+
+.input {
+  width: 100%;
+  height: var(--input-height);
+  border-radius: 3px;
+}
+
+.historyDropdown {
+  max-height: 150px;
+  overflow-y: auto;
+  background: var(--bg-dropdown);
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  margin-bottom: 8px;
+}
+
+.historyItem {
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+.historyItem:hover, .historyItem.active {
+  background: var(--bg-active);
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.launchBtn {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  padding: 4px 16px;
+  border-radius: 3px;
+}
+.launchBtn:hover {
+  background: var(--btn-bg-hover);
+}
+
+.cancelBtn {
+  background: var(--bg-tertiary);
+  color: var(--fg-primary);
+  border: 1px solid var(--border-primary);
+  padding: 4px 16px;
+  border-radius: 3px;
+}
+.cancelBtn:hover {
+  background: var(--bg-hover);
+}

@@ -1,0 +1,38 @@
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.logArea {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+.logContent {
+  position: relative;
+  min-width: 100%;
+  width: fit-content;
+}
+
+.logRow {
+  white-space: pre;
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  line-height: 18px;
+  padding: 0 4px;
+}
+
+.empty {
+  padding: 20px;
+  color: var(--fg-muted);
+  font-size: var(--font-size);
+  position: absolute;
+  top: 0;
+  left: 0;
+}
