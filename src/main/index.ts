@@ -24,7 +24,8 @@ function getPreloadPath(): string {
 
 function getRendererUrl(hash: string = ''): string {
   if (isDev) {
-    return `http://localhost:5173/#${hash}`
+    const rendererUrl = process.env.ELECTRON_RENDERER_URL || 'http://127.0.0.1:5173'
+    return `${rendererUrl}/#${hash}`
   }
   return `file://${path.join(__dirname, '..', 'renderer', 'index.html')}#${hash}`
 }
