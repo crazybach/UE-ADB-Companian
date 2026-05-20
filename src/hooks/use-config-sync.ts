@@ -16,7 +16,7 @@ export function useConfigSync() {
         const columns = useLogStore.getState().columns
         const processFilter = useLogStore.getState().processFilter
         const scrollLock = useLogStore.getState().scrollLock
-        const { config, commandHistory } = useAppStore.getState()
+        const { config } = useAppStore.getState()
 
         try {
           await window.electronAPI.configSave({

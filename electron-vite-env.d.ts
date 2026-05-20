@@ -10,6 +10,23 @@ interface ConnectionStatusPayload {
   device: string | null
 }
 
+interface CotfServerConfig {
+  ueCmdBinary: string
+  projectPath: string
+  abslogDir: string
+  fixedArgs: string
+}
+
+interface CotfLaunchResult {
+  success: boolean
+  error?: string
+  data?: {
+    abslogPath: string
+    command: string
+    launcherPath: string
+  }
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -31,6 +48,8 @@ interface ElectronAPI {
   openCaptureWindow: () => Promise<void>
   openPaletteWindow: () => Promise<void>
   openPreviewWindow: () => Promise<void>
+  openCotfServerWindow: () => Promise<void>
+  launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

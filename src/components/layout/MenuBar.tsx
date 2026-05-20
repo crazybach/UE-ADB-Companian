@@ -9,6 +9,7 @@ export default function MenuBar() {
   const handleOpenCapture = useCallback(() => window.electronAPI.openCaptureWindow(), [])
   const handleOpenPalette = useCallback(() => window.electronAPI.openPaletteWindow(), [])
   const handleOpenPreview = useCallback(() => window.electronAPI.openPreviewWindow(), [])
+  const handleOpenCotfServer = useCallback(() => window.electronAPI.openCotfServerWindow(), [])
   const handleConnect = useCallback(async () => {
     if (connectionStatus !== 'disconnected') return
     try {
@@ -41,6 +42,9 @@ export default function MenuBar() {
           </button>
           <button className={styles.dropdownItem} onClick={handleOpenPreview}>
             Local Preview
+          </button>
+          <button className={styles.dropdownItem} onClick={handleOpenCotfServer}>
+            COTF Server
           </button>
           <div className={styles.divider} />
           <button

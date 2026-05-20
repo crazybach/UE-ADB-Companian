@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores/app-store'
 import { useLogStore } from '../stores/log-store'
+import { DEFAULT_COTF_SERVER_CONFIG } from '../types/config'
 import { DEFAULT_COLUMNS } from '../types/log'
 
 export function useConfig() {
@@ -56,6 +57,15 @@ export function useConfig() {
 
         if (saved.launchParameters !== undefined) {
           setConfig({ launchParameters: saved.launchParameters })
+        }
+
+        if (saved.cotfServer !== undefined) {
+          setConfig({
+            cotfServer: {
+              ...DEFAULT_COTF_SERVER_CONFIG,
+              ...saved.cotfServer,
+            },
+          })
         }
       } catch {
         // Use defaults

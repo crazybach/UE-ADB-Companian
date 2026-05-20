@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
@@ -8,6 +8,7 @@ let mainWindow: BrowserWindow | null = null
 let captureWindow: BrowserWindow | null = null
 let paletteWindow: BrowserWindow | null = null
 let previewWindow: BrowserWindow | null = null
+let cotfServerWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -15,6 +16,23 @@ let deviceMonitor: DeviceMonitor
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 let connectionStatus: ConnectionState = 'disconnected'
 let connectedDevice: string | null = null
+
+interface CotfServerConfig {
+  ueCmdBinary: string
+  projectPath: string
+  abslogDir: string
+  fixedArgs: string
+}
+
+interface CotfLaunchResult {
+  success: boolean
+  error?: string
+  data?: {
+    abslogPath: string
+    command: string
+    launcherPath: string
+  }
+}
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -63,6 +81,7 @@ function broadcastStatus(): void {
   captureWindow?.webContents.send('adb:connection-status', payload)
   paletteWindow?.webContents.send('adb:connection-status', payload)
   previewWindow?.webContents.send('adb:connection-status', payload)
+  cotfServerWindow?.webContents.send('adb:connection-status', payload)
 }
 
 function createMainWindow(): void {
@@ -119,9 +138,96 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     if (win === captureWindow) captureWindow = null
     else if (win === paletteWindow) paletteWindow = null
     else if (win === previewWindow) previewWindow = null
+    else if (win === cotfServerWindow) cotfServerWindow = null
   })
 
   return win
+}
+
+function formatTimestampForFilename(date = new Date()): string {
+  const pad = (value: number) => value.toString().padStart(2, '0')
+  return [
+    date.getFullYear().toString(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    '_',
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds()),
+  ].join('')
+}
+
+function quoteCmdArg(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`
+}
+
+async function launchCotfServer(config: CotfServerConfig): Promise<CotfLaunchResult> {
+  if (process.platform !== 'win32') {
+    return { success: false, error: 'COTF server launch is only supported on Windows.' }
+  }
+
+  const ueCmdBinary = config.ueCmdBinary.trim()
+  const projectPath = config.projectPath.trim()
+  const abslogDir = config.abslogDir.trim()
+  const fixedArgs = config.fixedArgs.trim()
+
+  if (!ueCmdBinary) return { success: false, error: 'UE cmd binary is required.' }
+  if (!projectPath) return { success: false, error: 'Project path is required.' }
+  if (!abslogDir) return { success: false, error: 'Abslog directory is required.' }
+  if (!fs.existsSync(ueCmdBinary)) {
+    return { success: false, error: `UE cmd binary not found: ${ueCmdBinary}` }
+  }
+  if (!fs.existsSync(projectPath)) {
+    return { success: false, error: `Project file not found: ${projectPath}` }
+  }
+
+  try {
+    fs.mkdirSync(abslogDir, { recursive: true })
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to create abslog directory: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+
+  const timestamp = formatTimestampForFilename()
+  const abslogPath = path.join(abslogDir, `CookServer_${timestamp}.log`)
+  const launcherPath = path.join(abslogDir, `LaunchCOTF_${timestamp}.cmd`)
+  const command = [
+    quoteCmdArg(ueCmdBinary),
+    quoteCmdArg(projectPath),
+    fixedArgs,
+    `-abslog=${quoteCmdArg(abslogPath)}`,
+  ].filter(Boolean).join(' ')
+
+  try {
+    const launcher = [
+      '@echo off',
+      'title COTF Server',
+      'echo Launching Unreal COTF server...',
+      `echo Log: ${abslogPath}`,
+      'echo.',
+      command,
+      'echo.',
+      'echo COTF server exited with code %ERRORLEVEL%.',
+      'pause',
+      '',
+    ].join('\r\n')
+
+    fs.writeFileSync(launcherPath, launcher, 'utf-8')
+
+    const openError = await shell.openPath(launcherPath)
+    if (openError) {
+      return { success: false, error: `Failed to open COTF launcher: ${openError}` }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to launch COTF server: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+
+  return { success: true, data: { abslogPath, command, launcherPath } }
 }
 
 // ── Connection Management ─────────────────────────────────
@@ -216,6 +322,10 @@ function setupIpcHandlers(): void {
 
   ipcMain.handle('adb:get-data-path', async () => {
     return getDataPath()
+  })
+
+  ipcMain.handle('cotf:launch-server', async (_event, config: CotfServerConfig) => {
+    return launchCotfServer(config)
   })
 
   // ── Config ──
@@ -316,6 +426,14 @@ function setupIpcHandlers(): void {
       return
     }
     previewWindow = createToolWindow('Local Preview', '/preview', 900, 600)
+  })
+
+  ipcMain.handle('window:open-cotf-server', async () => {
+    if (cotfServerWindow && !cotfServerWindow.isDestroyed()) {
+      cotfServerWindow.focus()
+      return
+    }
+    cotfServerWindow = createToolWindow('COTF Server', '/cotf-server', 760, 460)
   })
 }
 
