@@ -30,6 +30,16 @@
 .clearBtn:hover {
   background: var(--bg-hover);
 }
+.clearBtn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.clearStatus {
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
 
 .checkboxRow {
   display: flex;

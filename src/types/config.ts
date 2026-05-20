@@ -14,6 +14,25 @@ export const DEFAULT_COTF_SERVER_CONFIG: CotfServerConfig = {
   fixedArgs: '-run=cook -cookonthefly -unattended -CrashForUAT -AllowStdOutLogVerbosity -ddc=DerivedDataBackendGraph -unversioned -iterate',
 }
 
+export interface CotfClientConfig {
+  activity: string
+  project: string
+  filehostip: string
+  projects: string[]
+  filehostips: string[]
+}
+
+export const DEFAULT_COTF_CLIENT_PROJECT = '../../../tankshooter/tankshooter.uproject'
+export const DEFAULT_COTF_CLIENT_FILEHOSTIP = '127.0.0.1+10.183.74.12'
+
+export const DEFAULT_COTF_CLIENT_CONFIG: CotfClientConfig = {
+  activity: 'net.boomgame/com.epicgames.unreal.SplashActivity',
+  project: DEFAULT_COTF_CLIENT_PROJECT,
+  filehostip: DEFAULT_COTF_CLIENT_FILEHOSTIP,
+  projects: [DEFAULT_COTF_CLIENT_PROJECT],
+  filehostips: [DEFAULT_COTF_CLIENT_FILEHOSTIP],
+}
+
 export interface PullLogsConfig {
   androidSavedPath: string
   destinationDir: string
@@ -81,5 +100,6 @@ export interface AppConfig {
   launchParameters: string[]
   advancedLaunch: AdvancedLaunchConfig
   cotfServer: CotfServerConfig
+  cotfClient: CotfClientConfig
   pullLogs: PullLogsConfig
 }

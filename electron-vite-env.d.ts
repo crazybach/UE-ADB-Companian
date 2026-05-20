@@ -17,6 +17,14 @@ interface CotfServerConfig {
   fixedArgs: string
 }
 
+interface CotfClientConfig {
+  activity: string
+  project: string
+  filehostip: string
+  projects: string[]
+  filehostips: string[]
+}
+
 interface CotfLaunchResult {
   success: boolean
   error?: string
@@ -79,6 +87,7 @@ interface ElectronAPI {
   openPaletteWindow: () => Promise<void>
   openPreviewWindow: () => Promise<void>
   openCotfServerWindow: () => Promise<void>
+  openCotfClientWindow: () => Promise<void>
   openPullLogsWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
@@ -89,6 +98,7 @@ interface ElectronAPI {
 
   startLogcat: () => Promise<void>
   stopLogcat: () => Promise<void>
+  clearLogcat: () => Promise<AdbResult>
 }
 
 interface Window {

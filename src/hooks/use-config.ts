@@ -3,6 +3,7 @@ import { useAppStore } from '../stores/app-store'
 import { useLogStore } from '../stores/log-store'
 import {
   DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
+  DEFAULT_COTF_CLIENT_CONFIG,
   DEFAULT_COTF_SERVER_CONFIG,
   DEFAULT_PULL_LOGS_CONFIG,
 } from '../types/config'
@@ -75,6 +76,15 @@ export function useConfig() {
             cotfServer: {
               ...DEFAULT_COTF_SERVER_CONFIG,
               ...saved.cotfServer,
+            },
+          })
+        }
+
+        if (saved.cotfClient !== undefined) {
+          setConfig({
+            cotfClient: {
+              ...DEFAULT_COTF_CLIENT_CONFIG,
+              ...saved.cotfClient,
             },
           })
         }

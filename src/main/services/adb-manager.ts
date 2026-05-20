@@ -134,6 +134,25 @@ export class AdbManager extends EventEmitter {
     this.emit('status', 'stopped')
   }
 
+  async clearLogcat(): Promise<AdbResult> {
+    const shouldRestart = this.running
+
+    if (shouldRestart) {
+      this.stopLogcat()
+    }
+
+    const result = await this.execCommandWithOutput('adb logcat -c')
+
+    if (shouldRestart) {
+      this.startLogcat()
+    }
+
+    return {
+      success: result.success,
+      error: result.error,
+    }
+  }
+
   async listThirdPartyPackages(): Promise<AdbResult<{ packages: string[] }>> {
     let result = await this.execCommandWithOutput('adb shell pm list packages -3')
     if (!result.success || !result.data) {

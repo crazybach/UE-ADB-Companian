@@ -1,10 +1,12 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useLogStore } from '../../stores/log-store'
 import { LOG_LEVELS, LOG_LEVEL_NAMES, LOG_LEVEL_COLORS } from '../../types/log'
 import type { LogLevel } from '../../types/log'
 import styles from './FilterSection.module.css'
 
 export default function FilterSection() {
+  const [clearing, setClearing] = useState(false)
+  const [clearStatus, setClearStatus] = useState('')
   const filterText = useLogStore((s) => s.filterText)
   const logLevels = useLogStore((s) => s.logLevels)
   const processFilter = useLogStore((s) => s.processFilter)
@@ -19,6 +21,25 @@ export default function FilterSection() {
     setFilterText('')
   }, [setFilterText])
 
+  const handleClearLog = useCallback(async () => {
+    clearLogs()
+    setClearing(true)
+    setClearStatus('Clearing device logcat...')
+
+    try {
+      const result = await window.electronAPI.clearLogcat()
+      if ((result as { success: boolean }).success) {
+        setClearStatus('Device logcat cleared.')
+      } else {
+        setClearStatus((result as { error?: string }).error || 'Failed to clear device logcat.')
+      }
+    } catch {
+      setClearStatus('Failed to clear device logcat.')
+    } finally {
+      setClearing(false)
+    }
+  }, [clearLogs])
+
   return (
     <div className={styles.container}>
       <div className={styles.filterRow}>
@@ -32,9 +53,10 @@ export default function FilterSection() {
         <button className={styles.clearBtn} onClick={handleClearFilter}>
           Clear Filter
         </button>
-        <button className={styles.clearBtn} onClick={clearLogs}>
-          Clear Log
+        <button className={styles.clearBtn} onClick={handleClearLog} disabled={clearing}>
+          {clearing ? 'Clearing...' : 'Clear Log'}
         </button>
+        {clearStatus && <span className={styles.clearStatus}>{clearStatus}</span>}
       </div>
       <div className={styles.checkboxRow}>
         {LOG_LEVELS.map((level) => (

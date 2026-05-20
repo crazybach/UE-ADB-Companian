@@ -10,6 +10,7 @@ let captureWindow: BrowserWindow | null = null
 let paletteWindow: BrowserWindow | null = null
 let previewWindow: BrowserWindow | null = null
 let cotfServerWindow: BrowserWindow | null = null
+let cotfClientWindow: BrowserWindow | null = null
 let pullLogsWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
@@ -101,6 +102,7 @@ function broadcastStatus(): void {
   paletteWindow?.webContents.send('adb:connection-status', payload)
   previewWindow?.webContents.send('adb:connection-status', payload)
   cotfServerWindow?.webContents.send('adb:connection-status', payload)
+  cotfClientWindow?.webContents.send('adb:connection-status', payload)
   pullLogsWindow?.webContents.send('adb:connection-status', payload)
 }
 
@@ -159,6 +161,7 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === paletteWindow) paletteWindow = null
     else if (win === previewWindow) previewWindow = null
     else if (win === cotfServerWindow) cotfServerWindow = null
+    else if (win === cotfClientWindow) cotfClientWindow = null
     else if (win === pullLogsWindow) pullLogsWindow = null
   })
 
@@ -467,6 +470,10 @@ function setupIpcHandlers(): void {
     adbManager.stopLogcat()
   })
 
+  ipcMain.handle('adb:clear-logcat', async () => {
+    return adbManager.clearLogcat()
+  })
+
   // Forward logcat events to all windows
   adbManager.on('batch', (lines: string[]) => {
     mainWindow?.webContents.send('logcat:batch', lines)
@@ -534,6 +541,14 @@ function setupIpcHandlers(): void {
       return
     }
     cotfServerWindow = createToolWindow('COTF Server', '/cotf-server', 760, 460)
+  })
+
+  ipcMain.handle('window:open-cotf-client', async () => {
+    if (cotfClientWindow && !cotfClientWindow.isDestroyed()) {
+      cotfClientWindow.focus()
+      return
+    }
+    cotfClientWindow = createToolWindow('COTF Client', '/cotf-client', 760, 620)
   })
 
   ipcMain.handle('window:open-pull-logs', async () => {

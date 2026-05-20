@@ -39,6 +39,7 @@ const electronAPI = {
   openPaletteWindow: () => ipcRenderer.invoke('window:open-palette'),
   openPreviewWindow: () => ipcRenderer.invoke('window:open-preview'),
   openCotfServerWindow: () => ipcRenderer.invoke('window:open-cotf-server'),
+  openCotfClientWindow: () => ipcRenderer.invoke('window:open-cotf-client'),
   openPullLogsWindow: () => ipcRenderer.invoke('window:open-pull-logs'),
   launchCotfServer: (config: Record<string, unknown>) =>
     ipcRenderer.invoke('cotf:launch-server', config),
@@ -68,6 +69,7 @@ const electronAPI = {
 
   startLogcat: () => ipcRenderer.invoke('adb:start-logcat'),
   stopLogcat: () => ipcRenderer.invoke('adb:stop-logcat'),
+  clearLogcat: () => ipcRenderer.invoke('adb:clear-logcat'),
 }
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI)

@@ -4,6 +4,7 @@ import ScreenCaptureScreen from './components/screens/ScreenCaptureScreen'
 import CommandPaletteScreen from './components/screens/CommandPaletteScreen'
 import LocalPreviewScreen from './components/screens/LocalPreviewScreen'
 import CotfServerScreen from './components/screens/CotfServerScreen'
+import CotfClientScreen from './components/screens/CotfClientScreen'
 import PullLogsScreen from './components/screens/PullLogsScreen'
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/palette" element={<CommandPaletteScreen />} />
         <Route path="/preview" element={<LocalPreviewScreen />} />
         <Route path="/cotf-server" element={<CotfServerScreen />} />
+        <Route path="/cotf-client" element={<CotfClientScreen />} />
         <Route path="/pull-logs" element={<PullLogsScreen />} />
       </Routes>
     </HashRouter>
