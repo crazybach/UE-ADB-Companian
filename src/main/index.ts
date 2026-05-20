@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { execFile } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
@@ -9,6 +10,7 @@ let captureWindow: BrowserWindow | null = null
 let paletteWindow: BrowserWindow | null = null
 let previewWindow: BrowserWindow | null = null
 let cotfServerWindow: BrowserWindow | null = null
+let pullLogsWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -31,6 +33,23 @@ interface CotfLaunchResult {
     abslogPath: string
     command: string
     launcherPath: string
+  }
+}
+
+interface PullLogsConfig {
+  androidSavedPath: string
+  destinationDir: string
+}
+
+interface PullLogsResult {
+  success: boolean
+  error?: string
+  data?: {
+    destinationPath: string
+    command: string
+    stdout: string
+    stderr: string
+    explorerError?: string
   }
 }
 
@@ -82,6 +101,7 @@ function broadcastStatus(): void {
   paletteWindow?.webContents.send('adb:connection-status', payload)
   previewWindow?.webContents.send('adb:connection-status', payload)
   cotfServerWindow?.webContents.send('adb:connection-status', payload)
+  pullLogsWindow?.webContents.send('adb:connection-status', payload)
 }
 
 function createMainWindow(): void {
@@ -139,6 +159,7 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === paletteWindow) paletteWindow = null
     else if (win === previewWindow) previewWindow = null
     else if (win === cotfServerWindow) cotfServerWindow = null
+    else if (win === pullLogsWindow) pullLogsWindow = null
   })
 
   return win
@@ -159,6 +180,81 @@ function formatTimestampForFilename(date = new Date()): string {
 
 function quoteCmdArg(value: string): string {
   return `"${value.replace(/"/g, '""')}"`
+}
+
+function execFileWithOutput(
+  file: string,
+  args: string[],
+  options: { maxBuffer?: number } = {},
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, options, (error, stdout, stderr) => {
+      if (error) {
+        const err = error as Error & { stdout?: string; stderr?: string }
+        err.stdout = stdout
+        err.stderr = stderr
+        reject(err)
+        return
+      }
+
+      resolve({ stdout, stderr })
+    })
+  })
+}
+
+async function pullLogs(config: PullLogsConfig): Promise<PullLogsResult> {
+  const androidSavedPath = config.androidSavedPath.trim()
+  const destinationDir = config.destinationDir.trim() || './'
+
+  if (!androidSavedPath) {
+    return { success: false, error: 'Android Saved path is required.' }
+  }
+
+  const baseDestination = path.resolve(destinationDir)
+  const destinationPath = path.join(baseDestination, `Saved_${formatTimestampForFilename()}`)
+  const command = ['adb', 'pull', quoteCmdArg(androidSavedPath), quoteCmdArg(destinationPath)].join(' ')
+
+  try {
+    fs.mkdirSync(destinationPath, { recursive: true })
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to create destination folder: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+
+  try {
+    const { stdout, stderr } = await execFileWithOutput(
+      'adb',
+      ['pull', androidSavedPath, destinationPath],
+      { maxBuffer: 100 * 1024 * 1024 },
+    )
+
+    const explorerError = await shell.openPath(destinationPath)
+
+    return {
+      success: true,
+      data: {
+        destinationPath,
+        command,
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        explorerError: explorerError || undefined,
+      },
+    }
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string }
+    return {
+      success: false,
+      error: err.stderr?.trim() || err.stdout?.trim() || err.message,
+      data: {
+        destinationPath,
+        command,
+        stdout: err.stdout?.trim() || '',
+        stderr: err.stderr?.trim() || '',
+      },
+    }
+  }
 }
 
 async function launchCotfServer(config: CotfServerConfig): Promise<CotfLaunchResult> {
@@ -328,6 +424,10 @@ function setupIpcHandlers(): void {
     return launchCotfServer(config)
   })
 
+  ipcMain.handle('logs:pull', async (_event, config: PullLogsConfig) => {
+    return pullLogs(config)
+  })
+
   // ── Config ──
 
   ipcMain.handle('config:load', async () => {
@@ -434,6 +534,14 @@ function setupIpcHandlers(): void {
       return
     }
     cotfServerWindow = createToolWindow('COTF Server', '/cotf-server', 760, 460)
+  })
+
+  ipcMain.handle('window:open-pull-logs', async () => {
+    if (pullLogsWindow && !pullLogsWindow.isDestroyed()) {
+      pullLogsWindow.focus()
+      return
+    }
+    pullLogsWindow = createToolWindow('Pull Logs', '/pull-logs', 760, 420)
   })
 }
 

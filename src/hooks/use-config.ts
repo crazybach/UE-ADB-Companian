@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores/app-store'
 import { useLogStore } from '../stores/log-store'
-import { DEFAULT_COTF_SERVER_CONFIG } from '../types/config'
+import { DEFAULT_COTF_SERVER_CONFIG, DEFAULT_PULL_LOGS_CONFIG } from '../types/config'
 import { DEFAULT_COLUMNS } from '../types/log'
 
 export function useConfig() {
@@ -64,6 +64,15 @@ export function useConfig() {
             cotfServer: {
               ...DEFAULT_COTF_SERVER_CONFIG,
               ...saved.cotfServer,
+            },
+          })
+        }
+
+        if (saved.pullLogs !== undefined) {
+          setConfig({
+            pullLogs: {
+              ...DEFAULT_PULL_LOGS_CONFIG,
+              ...saved.pullLogs,
             },
           })
         }

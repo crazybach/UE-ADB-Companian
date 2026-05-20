@@ -39,8 +39,10 @@ const electronAPI = {
   openPaletteWindow: () => ipcRenderer.invoke('window:open-palette'),
   openPreviewWindow: () => ipcRenderer.invoke('window:open-preview'),
   openCotfServerWindow: () => ipcRenderer.invoke('window:open-cotf-server'),
+  openPullLogsWindow: () => ipcRenderer.invoke('window:open-pull-logs'),
   launchCotfServer: (config: Record<string, unknown>) =>
     ipcRenderer.invoke('cotf:launch-server', config),
+  pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
 
   // Logcat events (main → renderer)
   onLogcatBatch: (callback: (lines: string[]) => void) => {

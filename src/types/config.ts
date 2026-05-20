@@ -14,6 +14,16 @@ export const DEFAULT_COTF_SERVER_CONFIG: CotfServerConfig = {
   fixedArgs: '-run=cook -cookonthefly -unattended -CrashForUAT -AllowStdOutLogVerbosity -ddc=DerivedDataBackendGraph -unversioned -iterate',
 }
 
+export interface PullLogsConfig {
+  androidSavedPath: string
+  destinationDir: string
+}
+
+export const DEFAULT_PULL_LOGS_CONFIG: PullLogsConfig = {
+  androidSavedPath: '/sdcard/Android/data/net.boomgame/files/UnrealGame/tankshooter/tankshooter/Saved/',
+  destinationDir: './',
+}
+
 export interface AppConfig {
   columns: ColumnDef[]
   logLevels: Record<string, boolean>
@@ -22,4 +32,5 @@ export interface AppConfig {
   scrollLock: boolean
   launchParameters: string[]
   cotfServer: CotfServerConfig
+  pullLogs: PullLogsConfig
 }

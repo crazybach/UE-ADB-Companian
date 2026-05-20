@@ -27,6 +27,23 @@ interface CotfLaunchResult {
   }
 }
 
+interface PullLogsConfig {
+  androidSavedPath: string
+  destinationDir: string
+}
+
+interface PullLogsResult {
+  success: boolean
+  error?: string
+  data?: {
+    destinationPath: string
+    command: string
+    stdout: string
+    stderr: string
+    explorerError?: string
+  }
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -49,7 +66,9 @@ interface ElectronAPI {
   openPaletteWindow: () => Promise<void>
   openPreviewWindow: () => Promise<void>
   openCotfServerWindow: () => Promise<void>
+  openPullLogsWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
+  pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

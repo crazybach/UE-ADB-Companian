@@ -1,5 +1,9 @@
 import { create } from 'zustand'
-import { DEFAULT_COTF_SERVER_CONFIG, type AppConfig } from '../types/config'
+import {
+  DEFAULT_COTF_SERVER_CONFIG,
+  DEFAULT_PULL_LOGS_CONFIG,
+  type AppConfig,
+} from '../types/config'
 import { DEFAULT_COLUMNS } from '../types/log'
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
@@ -38,6 +42,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     scrollLock: false,
     launchParameters: [],
     cotfServer: DEFAULT_COTF_SERVER_CONFIG,
+    pullLogs: DEFAULT_PULL_LOGS_CONFIG,
   },
   commandHistory: [],
 

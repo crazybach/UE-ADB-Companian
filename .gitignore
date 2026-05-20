@@ -3,6 +3,7 @@ dist/
 out/
 release/
 *.log
+Saved_*/
 .DS_Store
 thumbs.db
 .claude/
