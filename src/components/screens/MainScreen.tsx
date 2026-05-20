@@ -17,6 +17,7 @@ export default function MainScreen() {
   const [packageDialogOpen, setPackageDialogOpen] = useState(false)
   const [activityDialogOpen, setActivityDialogOpen] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState('')
+  const [selectedActivity, setSelectedActivity] = useState('')
 
   const handleOpenClick = useCallback(() => {
     setPackageDialogOpen(true)
@@ -29,20 +30,14 @@ export default function MainScreen() {
   }, [])
 
   const handleActivitySelect = useCallback((activity: string) => {
+    setSelectedActivity(activity)
     setActivityDialogOpen(false)
-    // The activity name will be set via a shared state or callback
-    // We use the window focus event to pass the selected activity back
-    const input = document.querySelector<HTMLInputElement>('[data-activity-input]')
-    if (input) {
-      input.value = activity
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-    }
   }, [])
 
   return (
     <>
       <MenuBar />
-      <MainLayout onOpenClick={handleOpenClick} />
+      <MainLayout onOpenClick={handleOpenClick} selectedActivity={selectedActivity} />
       {packageDialogOpen && (
         <PackageSelectDialog
           onSelect={handlePackageSelect}

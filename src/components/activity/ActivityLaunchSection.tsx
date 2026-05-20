@@ -1,26 +1,55 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '../../stores/app-store'
 import LaunchParameterDialog from './LaunchParameterDialog'
 import styles from './ActivityLaunchSection.module.css'
 
 interface ActivityLaunchSectionProps {
   onOpenClick: () => void
+  selectedActivity: string
 }
 
-export default function ActivityLaunchSection({ onOpenClick }: ActivityLaunchSectionProps) {
+export default function ActivityLaunchSection({
+  onOpenClick,
+  selectedActivity,
+}: ActivityLaunchSectionProps) {
   const [activity, setActivity] = useState('')
   const [showParams, setShowParams] = useState(false)
   const config = useAppStore((s) => s.config)
   const setConfig = useAppStore((s) => s.setConfig)
-  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (selectedActivity) {
+      setActivity(selectedActivity)
+      setConfig({ launchActivity: selectedActivity })
+    }
+  }, [selectedActivity, setConfig])
+
+  useEffect(() => {
+    if (!activity && config.launchActivity) {
+      setActivity(config.launchActivity)
+    }
+  }, [activity, config.launchActivity])
+
+  useEffect(() => {
+    const handleAdvancedLaunch = () => {
+      if (!activity.trim()) return
+
+      setConfig({ launchActivity: activity })
+      setShowParams(true)
+    }
+
+    window.addEventListener('activity:advanced-launch', handleAdvancedLaunch)
+    return () => window.removeEventListener('activity:advanced-launch', handleAdvancedLaunch)
+  }, [activity, setConfig])
 
   const handleLaunch = useCallback(async () => {
     if (!activity.trim()) return
 
     setConfig({ launchActivity: activity })
 
-    // Show launch parameter dialog
-    setShowParams(true)
+    try {
+      await window.electronAPI.launchActivity(activity, '')
+    } catch { /* ADB error */ }
   }, [activity, setConfig])
 
   const handleLaunchWithParams = useCallback(async (params: string) => {
@@ -30,19 +59,10 @@ export default function ActivityLaunchSection({ onOpenClick }: ActivityLaunchSec
     } catch { /* ADB error */ }
   }, [activity])
 
-  // Load saved activity on mount
-  if (!activity && config.launchActivity) {
-    // Will be set via useEffect in parent, but for now check ref
-    if (inputRef.current) {
-      inputRef.current.value = config.launchActivity
-    }
-  }
-
   return (
     <div className={styles.row}>
       <label className={styles.label}>Activity:</label>
       <input
-        ref={inputRef}
         type="text"
         className={styles.input}
         data-activity-input

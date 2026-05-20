@@ -10,6 +10,9 @@ export default function MenuBar() {
   const handleOpenPalette = useCallback(() => window.electronAPI.openPaletteWindow(), [])
   const handleOpenPreview = useCallback(() => window.electronAPI.openPreviewWindow(), [])
   const handleOpenCotfServer = useCallback(() => window.electronAPI.openCotfServerWindow(), [])
+  const handleAdvancedLaunch = useCallback(() => {
+    window.dispatchEvent(new Event('activity:advanced-launch'))
+  }, [])
   const handleConnect = useCallback(async () => {
     if (connectionStatus !== 'disconnected') return
     try {
@@ -45,6 +48,9 @@ export default function MenuBar() {
           </button>
           <button className={styles.dropdownItem} onClick={handleOpenCotfServer}>
             COTF Server
+          </button>
+          <button className={styles.dropdownItem} onClick={handleAdvancedLaunch}>
+            Advanced Launch
           </button>
           <div className={styles.divider} />
           <button
