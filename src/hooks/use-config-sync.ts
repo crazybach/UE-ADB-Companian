@@ -26,6 +26,7 @@ export function useConfigSync() {
             processFilter,
             scrollLock,
             launchParameters: config.launchParameters,
+            advancedLaunch: config.advancedLaunch,
           })
         } catch {
           // Config save failed — non-critical
@@ -60,6 +61,7 @@ export function useConfigSync() {
         processFilter,
         scrollLock,
         launchParameters: config.launchParameters,
+        advancedLaunch: config.advancedLaunch,
       })
     }
 

@@ -44,6 +44,19 @@ interface PullLogsResult {
   }
 }
 
+interface AdvancedLaunchRow {
+  id: string
+  enabled: boolean
+  value: string
+}
+
+interface AdvancedLaunchConfig {
+  activity: string
+  direct: AdvancedLaunchRow[]
+  execCmds: AdvancedLaunchRow[]
+  dpcvars: AdvancedLaunchRow[]
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>

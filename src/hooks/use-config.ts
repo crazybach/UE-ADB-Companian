@@ -1,8 +1,13 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores/app-store'
 import { useLogStore } from '../stores/log-store'
-import { DEFAULT_COTF_SERVER_CONFIG, DEFAULT_PULL_LOGS_CONFIG } from '../types/config'
+import {
+  DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
+  DEFAULT_COTF_SERVER_CONFIG,
+  DEFAULT_PULL_LOGS_CONFIG,
+} from '../types/config'
 import { DEFAULT_COLUMNS } from '../types/log'
+import { mergeAdvancedLaunchConfig } from '../services/advanced-launch'
 
 export function useConfig() {
   const setConfig = useAppStore((s) => s.setConfig)
@@ -10,7 +15,6 @@ export function useConfig() {
   const configLoaded = useAppStore((s) => s.configLoaded)
 
   const setColumns = useLogStore((s) => s.setColumns)
-  const setFilterText = useLogStore((s) => s.setFilterText)
   const setProcessFilter = useLogStore((s) => s.setProcessFilter)
   const setScrollLock = useLogStore((s) => s.setScrollLock)
 
@@ -58,6 +62,13 @@ export function useConfig() {
         if (saved.launchParameters !== undefined) {
           setConfig({ launchParameters: saved.launchParameters })
         }
+
+        setConfig({
+          advancedLaunch: mergeAdvancedLaunchConfig(
+            saved.advancedLaunch,
+            saved.launchActivity || DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
+          ),
+        })
 
         if (saved.cotfServer !== undefined) {
           setConfig({

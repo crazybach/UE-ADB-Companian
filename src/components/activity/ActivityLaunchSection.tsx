@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '../../stores/app-store'
+import { DEFAULT_ADVANCED_LAUNCH_ACTIVITY } from '../../types/config'
 import LaunchParameterDialog from './LaunchParameterDialog'
 import styles from './ActivityLaunchSection.module.css'
 
@@ -12,7 +13,7 @@ export default function ActivityLaunchSection({
   onOpenClick,
   selectedActivity,
 }: ActivityLaunchSectionProps) {
-  const [activity, setActivity] = useState('')
+  const [activity, setActivity] = useState(DEFAULT_ADVANCED_LAUNCH_ACTIVITY)
   const [showParams, setShowParams] = useState(false)
   const config = useAppStore((s) => s.config)
   const setConfig = useAppStore((s) => s.setConfig)
@@ -25,16 +26,18 @@ export default function ActivityLaunchSection({
   }, [selectedActivity, setConfig])
 
   useEffect(() => {
-    if (!activity && config.launchActivity) {
+    if (config.launchActivity) {
       setActivity(config.launchActivity)
+    } else if (config.advancedLaunch.activity) {
+      setActivity(config.advancedLaunch.activity)
     }
-  }, [activity, config.launchActivity])
+  }, [config.launchActivity, config.advancedLaunch.activity])
 
   useEffect(() => {
     const handleAdvancedLaunch = () => {
-      if (!activity.trim()) return
-
-      setConfig({ launchActivity: activity })
+      const nextActivity = activity.trim() || DEFAULT_ADVANCED_LAUNCH_ACTIVITY
+      setActivity(nextActivity)
+      setConfig({ launchActivity: nextActivity })
       setShowParams(true)
     }
 
@@ -52,12 +55,13 @@ export default function ActivityLaunchSection({
     } catch { /* ADB error */ }
   }, [activity, setConfig])
 
-  const handleLaunchWithParams = useCallback(async (params: string) => {
+  const handleLaunchWithParams = useCallback(async (launchActivity: string, params: string) => {
+    setActivity(launchActivity)
     setShowParams(false)
     try {
-      await window.electronAPI.launchActivity(activity, params)
+      await window.electronAPI.launchActivity(launchActivity, params)
     } catch { /* ADB error */ }
-  }, [activity])
+  }, [])
 
   return (
     <div className={styles.row}>

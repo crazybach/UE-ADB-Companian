@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import {
+  DEFAULT_ADVANCED_LAUNCH_CONFIG,
   DEFAULT_COTF_SERVER_CONFIG,
   DEFAULT_PULL_LOGS_CONFIG,
   type AppConfig,
@@ -41,6 +42,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     processFilter: false,
     scrollLock: false,
     launchParameters: [],
+    advancedLaunch: DEFAULT_ADVANCED_LAUNCH_CONFIG,
     cotfServer: DEFAULT_COTF_SERVER_CONFIG,
     pullLogs: DEFAULT_PULL_LOGS_CONFIG,
   },

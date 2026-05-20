@@ -2,6 +2,7 @@ import { spawn, exec, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import path from 'path'
 import fs from 'fs'
+import { formatLaunchCommand } from '../../services/advanced-launch'
 
 export interface AdbResult<T = void> {
   success: boolean
@@ -203,8 +204,7 @@ export class AdbManager extends EventEmitter {
   }
 
   async launchActivity(activity: string, parameters: string): Promise<AdbResult<{ pid?: string }>> {
-    const paramsArg = parameters ? ` --es cmdline "${parameters} "` : ''
-    const cmd = `adb shell am start -n ${activity}${paramsArg}`
+    const cmd = formatLaunchCommand(activity, parameters)
     const result = await this.execCommandWithOutput(cmd)
 
     if (!result.success) {
