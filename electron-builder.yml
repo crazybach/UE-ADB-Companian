@@ -12,7 +12,7 @@ win:
   target:
     - nsis
     - zip
-  artifactName: ${productName}-${version}-setup.${ext}
+  artifactName: ${productName}-${version}-${arch}.${ext}
   signAndEditExecutable: false
 nsis:
   oneClick: false
