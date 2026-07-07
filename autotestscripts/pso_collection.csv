@@ -1,0 +1,4 @@
+stat fps,10
+stat unit,10
+stat vulkanrhi,10
+stat openglrhi,10

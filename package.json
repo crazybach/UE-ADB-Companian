@@ -1,6 +1,6 @@
 {
   "name": "ue-console-adb",
-  "version": "2.0.0",
+  "version": "2.0.4",
   "description": "ADB debugger bridge for Unreal Engine on Android — TypeScript + React + Electron",
   "main": "out/main/index.js",
   "scripts": {
@@ -12,11 +12,11 @@
     "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.11.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "zustand": "^5.0.0",
-    "@tanstack/react-virtual": "^3.11.0"
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

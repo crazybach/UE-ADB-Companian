@@ -6,6 +6,7 @@ import LocalPreviewScreen from './components/screens/LocalPreviewScreen'
 import CotfServerScreen from './components/screens/CotfServerScreen'
 import CotfClientScreen from './components/screens/CotfClientScreen'
 import PullLogsScreen from './components/screens/PullLogsScreen'
+import AutoTestScreen from './components/screens/AutoTestScreen'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/cotf-server" element={<CotfServerScreen />} />
         <Route path="/cotf-client" element={<CotfClientScreen />} />
         <Route path="/pull-logs" element={<PullLogsScreen />} />
+        <Route path="/auto-test" element={<AutoTestScreen />} />
       </Routes>
     </HashRouter>
   )

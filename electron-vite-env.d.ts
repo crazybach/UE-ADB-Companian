@@ -64,6 +64,25 @@ interface AdvancedLaunchConfig {
   execCmds: AdvancedLaunchRow[]
   dpcvars: AdvancedLaunchRow[]
 }
+interface AutoTestRow {
+  id: number
+  command: string
+  waitSeconds: number
+}
+
+interface AutoTestOpenCsvResult {
+  canceled?: boolean
+  path?: string
+  rows?: AutoTestRow[]
+  error?: string
+}
+
+interface AutoTestRunResult {
+  success: boolean
+  error?: string
+  stdout: string
+  stderr: string
+}
 
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
@@ -89,8 +108,11 @@ interface ElectronAPI {
   openCotfServerWindow: () => Promise<void>
   openCotfClientWindow: () => Promise<void>
   openPullLogsWindow: () => Promise<void>
+  openAutoTestWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
+  openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
+  runAutoTestCommand: (command: string) => Promise<AutoTestRunResult>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

@@ -1,9 +1,10 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
 import { execFile } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
 import { DeviceMonitor } from './services/device-monitor'
+import { parseAutoTestCsv, type AutoTestRow } from '../services/auto-test'
 
 let mainWindow: BrowserWindow | null = null
 let captureWindow: BrowserWindow | null = null
@@ -12,6 +13,7 @@ let previewWindow: BrowserWindow | null = null
 let cotfServerWindow: BrowserWindow | null = null
 let cotfClientWindow: BrowserWindow | null = null
 let pullLogsWindow: BrowserWindow | null = null
+let autoTestWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -52,6 +54,13 @@ interface PullLogsResult {
     stderr: string
     explorerError?: string
   }
+}
+
+interface AutoTestOpenCsvResult {
+  canceled?: boolean
+  path?: string
+  rows?: AutoTestRow[]
+  error?: string
 }
 
 const isDev = process.env.NODE_ENV === 'development'
@@ -104,6 +113,7 @@ function broadcastStatus(): void {
   cotfServerWindow?.webContents.send('adb:connection-status', payload)
   cotfClientWindow?.webContents.send('adb:connection-status', payload)
   pullLogsWindow?.webContents.send('adb:connection-status', payload)
+  autoTestWindow?.webContents.send('adb:connection-status', payload)
 }
 
 function createMainWindow(): void {
@@ -163,6 +173,7 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === cotfServerWindow) cotfServerWindow = null
     else if (win === cotfClientWindow) cotfClientWindow = null
     else if (win === pullLogsWindow) pullLogsWindow = null
+    else if (win === autoTestWindow) autoTestWindow = null
   })
 
   return win
@@ -260,6 +271,43 @@ async function pullLogs(config: PullLogsConfig): Promise<PullLogsResult> {
   }
 }
 
+async function openAutoTestCsv(): Promise<AutoTestOpenCsvResult> {
+  const parent = autoTestWindow && !autoTestWindow.isDestroyed() ? autoTestWindow : mainWindow
+  const options: OpenDialogOptions = {
+    title: 'Open Auto Test CSV',
+    filters: [
+      { name: 'CSV Files', extensions: ['csv'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  }
+
+  const result = parent
+    ? await dialog.showOpenDialog(parent, options)
+    : await dialog.showOpenDialog(options)
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true, rows: [] }
+  }
+
+  const filePath = result.filePaths[0]
+
+  try {
+    const csvText = fs.readFileSync(filePath, 'utf-8')
+    return {
+      canceled: false,
+      path: filePath,
+      rows: parseAutoTestCsv(csvText),
+    }
+  } catch (error) {
+    return {
+      canceled: false,
+      path: filePath,
+      rows: [],
+      error: error instanceof Error ? error.message : 'Failed to read CSV file.',
+    }
+  }
+}
 async function launchCotfServer(config: CotfServerConfig): Promise<CotfLaunchResult> {
   if (process.platform !== 'win32') {
     return { success: false, error: 'COTF server launch is only supported on Windows.' }
@@ -431,6 +479,28 @@ function setupIpcHandlers(): void {
     return pullLogs(config)
   })
 
+  ipcMain.handle('autotest:open-csv', async () => {
+    return openAutoTestCsv()
+  })
+
+  ipcMain.handle('autotest:run-command', async (_event, command: string) => {
+    if (!command.trim()) {
+      return {
+        success: false,
+        error: 'Empty command',
+        stdout: '',
+        stderr: '',
+      }
+    }
+
+    const result = await adbManager.sendCommand(command)
+    return {
+      success: result.success,
+      error: result.error || '',
+      stdout: '',
+      stderr: result.error || '',
+    }
+  })
   // ── Config ──
 
   ipcMain.handle('config:load', async () => {
@@ -557,6 +627,13 @@ function setupIpcHandlers(): void {
       return
     }
     pullLogsWindow = createToolWindow('Pull Logs', '/pull-logs', 760, 420)
+  })
+  ipcMain.handle('window:open-auto-test', async () => {
+    if (autoTestWindow && !autoTestWindow.isDestroyed()) {
+      autoTestWindow.focus()
+      return
+    }
+    autoTestWindow = createToolWindow('Auto Test', '/auto-test', 900, 640)
   })
 }
 

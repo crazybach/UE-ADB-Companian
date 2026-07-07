@@ -12,6 +12,7 @@ export default function MenuBar() {
   const handleOpenCotfServer = useCallback(() => window.electronAPI.openCotfServerWindow(), [])
   const handleOpenCotfClient = useCallback(() => window.electronAPI.openCotfClientWindow(), [])
   const handleOpenPullLogs = useCallback(() => window.electronAPI.openPullLogsWindow(), [])
+  const handleOpenAutoTest = useCallback(() => window.electronAPI.openAutoTestWindow(), [])
   const handleAdvancedLaunch = useCallback(() => {
     window.dispatchEvent(new Event('activity:advanced-launch'))
   }, [])
@@ -57,6 +58,10 @@ export default function MenuBar() {
           <button className={styles.dropdownItem} onClick={handleOpenPullLogs}>
             Pull Logs
           </button>
+          <button className={styles.dropdownItem} onClick={handleOpenAutoTest}>
+            Auto Test
+          </button>
+
           <button className={styles.dropdownItem} onClick={handleAdvancedLaunch}>
             Advanced Launch
           </button>
