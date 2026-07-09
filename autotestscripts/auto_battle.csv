@@ -1,0 +1,19 @@
+quickpreview Main_Chicago 20013 0,10
+addbots 5 5 20 5,10
+infintematchtime 1,1
+niagaradebughud 1,5
+niagaradebughud 2,5
+niagaradebughud 3,5
+niagaradebughud 4,5
+niagaradebughud 5,5
+memreport -full,3
+quickpreview Main_Tokyo 20013 0,10
+addbots 5 5 20 5,10
+infintematchtime 1,1
+niagaradebughud 1,5
+niagaradebughud 2,5
+niagaradebughud 3,5
+niagaradebughud 4,5
+niagaradebughud 5,5
+memreport -full,3
+
