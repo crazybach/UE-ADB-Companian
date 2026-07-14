@@ -76,11 +76,12 @@ export class AdbManager extends EventEmitter {
     this.running = true
     this.lineBuffer = []
 
-    this.logcatProcess = spawn('adb', ['logcat'], {
+    const process = spawn('adb', ['logcat'], {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
+    this.logcatProcess = process
 
-    this.logcatProcess.stdout?.on('data', (data: Buffer) => {
+    process.stdout?.on('data', (data: Buffer) => {
       const text = data.toString('utf-8')
       const lines = text.split('\n')
       for (const line of lines) {
@@ -91,16 +92,22 @@ export class AdbManager extends EventEmitter {
       }
     })
 
-    this.logcatProcess.stderr?.on('data', (data: Buffer) => {
+    process.stderr?.on('data', (data: Buffer) => {
       this.emit('error', `[APP] Logcat stderr: ${data.toString('utf-8').trim()}`)
     })
 
-    this.logcatProcess.on('error', (err) => {
+    process.on('error', (err) => {
       this.emit('error', `[APP] Logcat process error: ${err.message}`)
-      this.running = false
+      if (this.logcatProcess === process) {
+        this.logcatProcess = null
+        this.running = false
+      }
     })
 
-    this.logcatProcess.on('close', (code) => {
+    process.on('close', (code) => {
+      if (this.logcatProcess !== process) return
+
+      this.logcatProcess = null
       this.running = false
       this.emit('status', 'stopped', code?.toString())
     })
@@ -122,14 +129,15 @@ export class AdbManager extends EventEmitter {
       clearInterval(this.batchTimer)
       this.batchTimer = null
     }
-    if (this.logcatProcess) {
-      this.logcatProcess.kill('SIGTERM')
+    const process = this.logcatProcess
+    this.logcatProcess = null
+    if (process) {
+      process.kill('SIGTERM')
       setTimeout(() => {
-        if (this.logcatProcess && !this.logcatProcess.killed) {
-          this.logcatProcess.kill('SIGKILL')
+        if (!process.killed) {
+          process.kill('SIGKILL')
         }
       }, 2000)
-      this.logcatProcess = null
     }
     this.emit('status', 'stopped')
   }
