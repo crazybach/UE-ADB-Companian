@@ -84,6 +84,45 @@ interface AutoTestRunResult {
   stderr: string
 }
 
+interface TextureMemoryRow {
+  id: number
+  cookedDimensions: string
+  cookedKB: number
+  authoredBias: string
+  currentDimensions: string
+  currentKB: number
+  format: string
+  lodGroup: string
+  name: string
+  streaming: string
+  unknownRef: string
+  virtualTexture: string
+  usageCount: number
+  numMips: number
+  uncompressed: string
+}
+
+interface TextureMemoryReport {
+  rows: TextureMemoryRow[]
+  summaryLines: string[]
+  totals: {
+    textureCount: number
+    currentKB: number
+    cookedKB: number
+    streamingCount: number
+    virtualTextureCount: number
+  }
+}
+
+interface TextureMemoryResult {
+  canceled?: boolean
+  success?: boolean
+  path?: string
+  remotePath?: string
+  report?: TextureMemoryReport
+  error?: string
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -109,10 +148,13 @@ interface ElectronAPI {
   openCotfClientWindow: () => Promise<void>
   openPullLogsWindow: () => Promise<void>
   openAutoTestWindow: () => Promise<void>
+  openTextureMemoryWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
   runAutoTestCommand: (command: string) => Promise<AutoTestRunResult>
+  openTextureMemreport: () => Promise<TextureMemoryResult>
+  captureTextureMemreport: () => Promise<TextureMemoryResult>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

@@ -5,6 +5,7 @@ import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
 import { DeviceMonitor } from './services/device-monitor'
 import { parseAutoTestCsv, type AutoTestRow } from '../services/auto-test'
+import { parseTextureMemoryReport, type TextureMemoryReport } from '../services/texture-memory'
 
 let mainWindow: BrowserWindow | null = null
 let captureWindow: BrowserWindow | null = null
@@ -14,6 +15,7 @@ let cotfServerWindow: BrowserWindow | null = null
 let cotfClientWindow: BrowserWindow | null = null
 let pullLogsWindow: BrowserWindow | null = null
 let autoTestWindow: BrowserWindow | null = null
+let textureMemoryWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -60,6 +62,15 @@ interface AutoTestOpenCsvResult {
   canceled?: boolean
   path?: string
   rows?: AutoTestRow[]
+  error?: string
+}
+
+interface TextureMemoryResult {
+  canceled?: boolean
+  success?: boolean
+  path?: string
+  remotePath?: string
+  report?: TextureMemoryReport
   error?: string
 }
 
@@ -114,6 +125,7 @@ function broadcastStatus(): void {
   cotfClientWindow?.webContents.send('adb:connection-status', payload)
   pullLogsWindow?.webContents.send('adb:connection-status', payload)
   autoTestWindow?.webContents.send('adb:connection-status', payload)
+  textureMemoryWindow?.webContents.send('adb:connection-status', payload)
 }
 
 function createMainWindow(): void {
@@ -174,6 +186,7 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === cotfClientWindow) cotfClientWindow = null
     else if (win === pullLogsWindow) pullLogsWindow = null
     else if (win === autoTestWindow) autoTestWindow = null
+    else if (win === textureMemoryWindow) textureMemoryWindow = null
   })
 
   return win
@@ -308,6 +321,136 @@ async function openAutoTestCsv(): Promise<AutoTestOpenCsvResult> {
     }
   }
 }
+
+function parseMemreportFile(filePath: string): TextureMemoryResult {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return {
+      success: true,
+      path: filePath,
+      report: parseTextureMemoryReport(content),
+    }
+  } catch (error) {
+    return {
+      success: false,
+      path: filePath,
+      error: error instanceof Error ? error.message : 'Failed to read memreport file.',
+    }
+  }
+}
+
+async function openTextureMemreport(): Promise<TextureMemoryResult> {
+  const parent = textureMemoryWindow && !textureMemoryWindow.isDestroyed()
+    ? textureMemoryWindow
+    : mainWindow
+  const options: OpenDialogOptions = {
+    title: 'Open Unreal Memory Report',
+    filters: [
+      { name: 'Unreal Memory Reports', extensions: ['memreport'] },
+      { name: 'Text Files', extensions: ['txt', 'log'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  }
+  const result = parent
+    ? await dialog.showOpenDialog(parent, options)
+    : await dialog.showOpenDialog(options)
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true }
+  }
+
+  return parseMemreportFile(result.filePaths[0])
+}
+
+const MEMREPORT_REMOTE_ROOTS = [
+  '/sdcard/Android/data',
+  '/sdcard/UE4Game',
+  '/sdcard/UnrealGame',
+  '/sdcard/Download',
+]
+
+async function listRemoteMemreports(): Promise<string[]> {
+  const reports = new Set<string>()
+
+  for (const root of MEMREPORT_REMOTE_ROOTS) {
+    try {
+      const { stdout } = await execFileWithOutput(
+        'adb',
+        ['shell', 'find', root, '-type', 'f', '-name', '*.memreport'],
+        { maxBuffer: 20 * 1024 * 1024 },
+      )
+      stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).forEach((file) => reports.add(file))
+    } catch (error) {
+      const stdout = (error as Error & { stdout?: string }).stdout || ''
+      stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).forEach((file) => reports.add(file))
+    }
+  }
+
+  return [...reports]
+}
+
+async function getRemoteFileSize(remotePath: string): Promise<number> {
+  try {
+    const { stdout } = await execFileWithOutput('adb', ['shell', 'stat', '-c', '%s', remotePath])
+    return Number.parseInt(stdout.trim(), 10) || 0
+  } catch {
+    return 0
+  }
+}
+
+async function captureTextureMemreport(): Promise<TextureMemoryResult> {
+  const existingReports = new Set(await listRemoteMemreports())
+  const commandResult = await adbManager.sendCommand('memreport -full')
+  if (!commandResult.success) {
+    return { success: false, error: commandResult.error || 'Failed to send memreport -full.' }
+  }
+
+  const observedSizes = new Map<string, number>()
+  let remotePath = ''
+
+  for (let attempt = 0; attempt < 60 && !remotePath; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const reports = await listRemoteMemreports()
+    const candidates = reports.filter((file) => !existingReports.has(file)).sort().reverse()
+
+    for (const candidate of candidates) {
+      const size = await getRemoteFileSize(candidate)
+      if (size > 0 && observedSizes.get(candidate) === size) {
+        remotePath = candidate
+        break
+      }
+      observedSizes.set(candidate, size)
+    }
+  }
+
+  if (!remotePath) {
+    return {
+      success: false,
+      error: 'Timed out waiting for a new memreport on the device. The report may be in an unsupported Android path.',
+    }
+  }
+
+  const reportDir = path.join(app.getPath('userData'), 'MemReports')
+  fs.mkdirSync(reportDir, { recursive: true })
+  const remoteName = path.posix.basename(remotePath)
+  const localPath = path.join(reportDir, `${formatTimestampForFilename()}_${remoteName}`)
+
+  try {
+    await execFileWithOutput('adb', ['pull', remotePath, localPath], { maxBuffer: 100 * 1024 * 1024 })
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string }
+    return {
+      success: false,
+      remotePath,
+      error: err.stderr?.trim() || err.stdout?.trim() || err.message,
+    }
+  }
+
+  const parsed = parseMemreportFile(localPath)
+  return { ...parsed, remotePath }
+}
+
 async function launchCotfServer(config: CotfServerConfig): Promise<CotfLaunchResult> {
   if (process.platform !== 'win32') {
     return { success: false, error: 'COTF server launch is only supported on Windows.' }
@@ -501,6 +644,14 @@ function setupIpcHandlers(): void {
       stderr: result.error || '',
     }
   })
+
+  ipcMain.handle('texture-memory:open-report', async () => {
+    return openTextureMemreport()
+  })
+
+  ipcMain.handle('texture-memory:capture', async () => {
+    return captureTextureMemreport()
+  })
   // ── Config ──
 
   ipcMain.handle('config:load', async () => {
@@ -634,6 +785,14 @@ function setupIpcHandlers(): void {
       return
     }
     autoTestWindow = createToolWindow('Auto Test', '/auto-test', 900, 640)
+  })
+
+  ipcMain.handle('window:open-texture-memory', async () => {
+    if (textureMemoryWindow && !textureMemoryWindow.isDestroyed()) {
+      textureMemoryWindow.focus()
+      return
+    }
+    textureMemoryWindow = createToolWindow('Texture Memory Usage', '/texture-memory', 1280, 760)
   })
 }
 

@@ -7,6 +7,7 @@ import CotfServerScreen from './components/screens/CotfServerScreen'
 import CotfClientScreen from './components/screens/CotfClientScreen'
 import PullLogsScreen from './components/screens/PullLogsScreen'
 import AutoTestScreen from './components/screens/AutoTestScreen'
+import TextureMemoryScreen from './components/screens/TextureMemoryScreen'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/cotf-client" element={<CotfClientScreen />} />
         <Route path="/pull-logs" element={<PullLogsScreen />} />
         <Route path="/auto-test" element={<AutoTestScreen />} />
+        <Route path="/texture-memory" element={<TextureMemoryScreen />} />
       </Routes>
     </HashRouter>
   )

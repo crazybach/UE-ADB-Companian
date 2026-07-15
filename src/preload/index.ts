@@ -42,11 +42,14 @@ const electronAPI = {
   openCotfClientWindow: () => ipcRenderer.invoke('window:open-cotf-client'),
   openPullLogsWindow: () => ipcRenderer.invoke('window:open-pull-logs'),
   openAutoTestWindow: () => ipcRenderer.invoke('window:open-auto-test'),
+  openTextureMemoryWindow: () => ipcRenderer.invoke('window:open-texture-memory'),
   launchCotfServer: (config: Record<string, unknown>) =>
     ipcRenderer.invoke('cotf:launch-server', config),
   pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
   openAutoTestCsv: () => ipcRenderer.invoke('autotest:open-csv'),
   runAutoTestCommand: (command: string) => ipcRenderer.invoke('autotest:run-command', command),
+  openTextureMemreport: () => ipcRenderer.invoke('texture-memory:open-report'),
+  captureTextureMemreport: () => ipcRenderer.invoke('texture-memory:capture'),
 
   // Logcat events (main → renderer)
   onLogcatBatch: (callback: (lines: string[]) => void) => {

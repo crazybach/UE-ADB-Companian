@@ -13,6 +13,7 @@ export default function MenuBar() {
   const handleOpenCotfClient = useCallback(() => window.electronAPI.openCotfClientWindow(), [])
   const handleOpenPullLogs = useCallback(() => window.electronAPI.openPullLogsWindow(), [])
   const handleOpenAutoTest = useCallback(() => window.electronAPI.openAutoTestWindow(), [])
+  const handleOpenTextureMemory = useCallback(() => window.electronAPI.openTextureMemoryWindow(), [])
   const handleAdvancedLaunch = useCallback(() => {
     window.dispatchEvent(new Event('activity:advanced-launch'))
   }, [])
@@ -72,6 +73,14 @@ export default function MenuBar() {
             disabled={isConnected}
           >
             {connectionStatus === 'connecting' ? 'Connecting...' : 'Connect'}
+          </button>
+        </div>
+      </div>
+      <div className={styles.menu}>
+        <span className={styles.menuItem}>Debug</span>
+        <div className={styles.dropdown}>
+          <button className={styles.dropdownItem} onClick={handleOpenTextureMemory}>
+            Texture Memory Usage
           </button>
         </div>
       </div>
