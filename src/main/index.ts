@@ -6,6 +6,12 @@ import { AdbManager } from './services/adb-manager'
 import { DeviceMonitor } from './services/device-monitor'
 import { parseAutoTestCsv, type AutoTestRow } from '../services/auto-test'
 import { parseTextureMemoryReport, type TextureMemoryReport } from '../services/texture-memory'
+import {
+  OBJECT_MEMORY_DEFINITIONS,
+  parseObjectMemoryReport,
+  type ObjectMemoryKind,
+  type ObjectMemoryReport,
+} from '../services/object-memory'
 
 let mainWindow: BrowserWindow | null = null
 let captureWindow: BrowserWindow | null = null
@@ -16,6 +22,9 @@ let cotfClientWindow: BrowserWindow | null = null
 let pullLogsWindow: BrowserWindow | null = null
 let autoTestWindow: BrowserWindow | null = null
 let textureMemoryWindow: BrowserWindow | null = null
+let staticMeshMemoryWindow: BrowserWindow | null = null
+let skeletalMeshMemoryWindow: BrowserWindow | null = null
+let staticMeshComponentMemoryWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -74,6 +83,15 @@ interface TextureMemoryResult {
   error?: string
 }
 
+
+interface ObjectMemoryResult {
+  canceled?: boolean
+  success?: boolean
+  path?: string
+  remotePath?: string
+  report?: ObjectMemoryReport
+  error?: string
+}
 const isDev = process.env.NODE_ENV === 'development'
 
 function getPreloadPath(): string {
@@ -126,6 +144,9 @@ function broadcastStatus(): void {
   pullLogsWindow?.webContents.send('adb:connection-status', payload)
   autoTestWindow?.webContents.send('adb:connection-status', payload)
   textureMemoryWindow?.webContents.send('adb:connection-status', payload)
+  staticMeshMemoryWindow?.webContents.send('adb:connection-status', payload)
+  skeletalMeshMemoryWindow?.webContents.send('adb:connection-status', payload)
+  staticMeshComponentMemoryWindow?.webContents.send('adb:connection-status', payload)
 }
 
 function createMainWindow(): void {
@@ -187,6 +208,9 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === pullLogsWindow) pullLogsWindow = null
     else if (win === autoTestWindow) autoTestWindow = null
     else if (win === textureMemoryWindow) textureMemoryWindow = null
+    else if (win === staticMeshMemoryWindow) staticMeshMemoryWindow = null
+    else if (win === skeletalMeshMemoryWindow) skeletalMeshMemoryWindow = null
+    else if (win === staticMeshComponentMemoryWindow) staticMeshComponentMemoryWindow = null
   })
 
   return win
@@ -451,6 +475,108 @@ async function captureTextureMemreport(): Promise<TextureMemoryResult> {
   return { ...parsed, remotePath }
 }
 
+function isObjectMemoryKind(value: string): value is ObjectMemoryKind {
+  return Object.prototype.hasOwnProperty.call(OBJECT_MEMORY_DEFINITIONS, value)
+}
+
+function getObjectMemoryWindow(kind: ObjectMemoryKind): BrowserWindow | null {
+  if (kind === 'static-mesh') return staticMeshMemoryWindow
+  if (kind === 'skeletal-mesh') return skeletalMeshMemoryWindow
+  return staticMeshComponentMemoryWindow
+}
+
+function parseObjectMemreportFile(filePath: string, kind: ObjectMemoryKind): ObjectMemoryResult {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return {
+      success: true,
+      path: filePath,
+      report: parseObjectMemoryReport(content, kind),
+    }
+  } catch (error) {
+    return {
+      success: false,
+      path: filePath,
+      error: error instanceof Error ? error.message : 'Failed to read memreport file.',
+    }
+  }
+}
+
+async function openObjectMemreport(kind: ObjectMemoryKind): Promise<ObjectMemoryResult> {
+  const toolWindow = getObjectMemoryWindow(kind)
+  const parent = toolWindow && !toolWindow.isDestroyed() ? toolWindow : mainWindow
+  const options: OpenDialogOptions = {
+    title: `Open ${OBJECT_MEMORY_DEFINITIONS[kind].label} Memory Report`,
+    filters: [
+      { name: 'Unreal Memory Reports', extensions: ['memreport'] },
+      { name: 'Text Files', extensions: ['txt', 'log'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  }
+  const result = parent
+    ? await dialog.showOpenDialog(parent, options)
+    : await dialog.showOpenDialog(options)
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true }
+  }
+
+  return parseObjectMemreportFile(result.filePaths[0], kind)
+}
+
+async function captureObjectMemreport(kind: ObjectMemoryKind): Promise<ObjectMemoryResult> {
+  const existingReports = new Set(await listRemoteMemreports())
+  const commandResult = await adbManager.sendCommand('memreport -full')
+  if (!commandResult.success) {
+    return { success: false, error: commandResult.error || 'Failed to send memreport -full.' }
+  }
+
+  const observedSizes = new Map<string, number>()
+  let remotePath = ''
+
+  for (let attempt = 0; attempt < 60 && !remotePath; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const reports = await listRemoteMemreports()
+    const candidates = reports.filter((file) => !existingReports.has(file)).sort().reverse()
+
+    for (const candidate of candidates) {
+      const size = await getRemoteFileSize(candidate)
+      if (size > 0 && observedSizes.get(candidate) === size) {
+        remotePath = candidate
+        break
+      }
+      observedSizes.set(candidate, size)
+    }
+  }
+
+  if (!remotePath) {
+    return {
+      success: false,
+      error: 'Timed out waiting for a new memreport on the device. The report may be in an unsupported Android path.',
+    }
+  }
+
+  const reportDir = path.join(app.getPath('userData'), 'MemReports')
+  fs.mkdirSync(reportDir, { recursive: true })
+  const remoteName = path.posix.basename(remotePath)
+  const localPath = path.join(reportDir, `${formatTimestampForFilename()}_${kind}_${remoteName}`)
+
+  try {
+    await execFileWithOutput('adb', ['pull', remotePath, localPath], { maxBuffer: 100 * 1024 * 1024 })
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string }
+    return {
+      success: false,
+      remotePath,
+      error: err.stderr?.trim() || err.stdout?.trim() || err.message,
+    }
+  }
+
+  const parsed = parseObjectMemreportFile(localPath, kind)
+  return { ...parsed, remotePath }
+}
+
 async function launchCotfServer(config: CotfServerConfig): Promise<CotfLaunchResult> {
   if (process.platform !== 'win32') {
     return { success: false, error: 'COTF server launch is only supported on Windows.' }
@@ -652,6 +778,19 @@ function setupIpcHandlers(): void {
   ipcMain.handle('texture-memory:capture', async () => {
     return captureTextureMemreport()
   })
+  ipcMain.handle('object-memory:open-report', async (_event, kind: string) => {
+    if (!isObjectMemoryKind(kind)) {
+      return { success: false, error: 'Unsupported object memory analysis type.' }
+    }
+    return openObjectMemreport(kind)
+  })
+
+  ipcMain.handle('object-memory:capture', async (_event, kind: string) => {
+    if (!isObjectMemoryKind(kind)) {
+      return { success: false, error: 'Unsupported object memory analysis type.' }
+    }
+    return captureObjectMemreport(kind)
+  })
   // ── Config ──
 
   ipcMain.handle('config:load', async () => {
@@ -793,6 +932,34 @@ function setupIpcHandlers(): void {
       return
     }
     textureMemoryWindow = createToolWindow('Texture Memory Usage', '/texture-memory', 1280, 760)
+  })
+  ipcMain.handle('window:open-static-mesh-memory', async () => {
+    if (staticMeshMemoryWindow && !staticMeshMemoryWindow.isDestroyed()) {
+      staticMeshMemoryWindow.focus()
+      return
+    }
+    staticMeshMemoryWindow = createToolWindow('Static Mesh Memory Usage', '/static-mesh-memory', 1180, 720)
+  })
+
+  ipcMain.handle('window:open-skeletal-mesh-memory', async () => {
+    if (skeletalMeshMemoryWindow && !skeletalMeshMemoryWindow.isDestroyed()) {
+      skeletalMeshMemoryWindow.focus()
+      return
+    }
+    skeletalMeshMemoryWindow = createToolWindow('Skeletal Mesh Memory Usage', '/skeletal-mesh-memory', 1180, 720)
+  })
+
+  ipcMain.handle('window:open-static-mesh-component-memory', async () => {
+    if (staticMeshComponentMemoryWindow && !staticMeshComponentMemoryWindow.isDestroyed()) {
+      staticMeshComponentMemoryWindow.focus()
+      return
+    }
+    staticMeshComponentMemoryWindow = createToolWindow(
+      'Static Mesh Component Memory Usage',
+      '/static-mesh-component-memory',
+      1280,
+      760,
+    )
   })
 }
 

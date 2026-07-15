@@ -1,0 +1,23 @@
+.filterBar {
+  grid-template-columns: minmax(260px, 1fr) minmax(130px, 180px) minmax(190px, 280px) auto;
+}
+
+.objectGrid {
+  grid-template-columns: 120px minmax(430px, 1fr) repeat(6, 92px);
+  min-width: 1120px;
+}
+
+.componentGrid {
+  grid-template-columns: 260px minmax(430px, 1fr) repeat(6, 92px);
+  min-width: 1260px;
+}
+
+.objectBody {
+  min-width: 1120px;
+}
+
+@media (max-width: 900px) {
+  .filterBar {
+    grid-template-columns: minmax(220px, 1fr) 150px;
+  }
+}

@@ -43,6 +43,9 @@ const electronAPI = {
   openPullLogsWindow: () => ipcRenderer.invoke('window:open-pull-logs'),
   openAutoTestWindow: () => ipcRenderer.invoke('window:open-auto-test'),
   openTextureMemoryWindow: () => ipcRenderer.invoke('window:open-texture-memory'),
+  openStaticMeshMemoryWindow: () => ipcRenderer.invoke('window:open-static-mesh-memory'),
+  openSkeletalMeshMemoryWindow: () => ipcRenderer.invoke('window:open-skeletal-mesh-memory'),
+  openStaticMeshComponentMemoryWindow: () => ipcRenderer.invoke('window:open-static-mesh-component-memory'),
   launchCotfServer: (config: Record<string, unknown>) =>
     ipcRenderer.invoke('cotf:launch-server', config),
   pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
@@ -50,6 +53,8 @@ const electronAPI = {
   runAutoTestCommand: (command: string) => ipcRenderer.invoke('autotest:run-command', command),
   openTextureMemreport: () => ipcRenderer.invoke('texture-memory:open-report'),
   captureTextureMemreport: () => ipcRenderer.invoke('texture-memory:capture'),
+  openObjectMemreport: (kind: string) => ipcRenderer.invoke('object-memory:open-report', kind),
+  captureObjectMemreport: (kind: string) => ipcRenderer.invoke('object-memory:capture', kind),
 
   // Logcat events (main → renderer)
   onLogcatBatch: (callback: (lines: string[]) => void) => {

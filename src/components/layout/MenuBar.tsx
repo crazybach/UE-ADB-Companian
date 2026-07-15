@@ -14,6 +14,9 @@ export default function MenuBar() {
   const handleOpenPullLogs = useCallback(() => window.electronAPI.openPullLogsWindow(), [])
   const handleOpenAutoTest = useCallback(() => window.electronAPI.openAutoTestWindow(), [])
   const handleOpenTextureMemory = useCallback(() => window.electronAPI.openTextureMemoryWindow(), [])
+  const handleOpenStaticMeshMemory = useCallback(() => window.electronAPI.openStaticMeshMemoryWindow(), [])
+  const handleOpenSkeletalMeshMemory = useCallback(() => window.electronAPI.openSkeletalMeshMemoryWindow(), [])
+  const handleOpenStaticMeshComponentMemory = useCallback(() => window.electronAPI.openStaticMeshComponentMemoryWindow(), [])
   const handleAdvancedLaunch = useCallback(() => {
     window.dispatchEvent(new Event('activity:advanced-launch'))
   }, [])
@@ -81,6 +84,15 @@ export default function MenuBar() {
         <div className={styles.dropdown}>
           <button className={styles.dropdownItem} onClick={handleOpenTextureMemory}>
             Texture Memory Usage
+          </button>
+          <button className={styles.dropdownItem} onClick={handleOpenStaticMeshMemory}>
+            Static Mesh Memory Usage
+          </button>
+          <button className={styles.dropdownItem} onClick={handleOpenSkeletalMeshMemory}>
+            Skeletal Mesh Memory Usage
+          </button>
+          <button className={styles.dropdownItem} onClick={handleOpenStaticMeshComponentMemory}>
+            Static Mesh Component Memory Usage
           </button>
         </div>
       </div>

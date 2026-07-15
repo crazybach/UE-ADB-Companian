@@ -8,6 +8,7 @@ import CotfClientScreen from './components/screens/CotfClientScreen'
 import PullLogsScreen from './components/screens/PullLogsScreen'
 import AutoTestScreen from './components/screens/AutoTestScreen'
 import TextureMemoryScreen from './components/screens/TextureMemoryScreen'
+import ObjectMemoryScreen from './components/screens/ObjectMemoryScreen'
 
 export default function App() {
   return (
@@ -22,6 +23,9 @@ export default function App() {
         <Route path="/pull-logs" element={<PullLogsScreen />} />
         <Route path="/auto-test" element={<AutoTestScreen />} />
         <Route path="/texture-memory" element={<TextureMemoryScreen />} />
+        <Route path="/static-mesh-memory" element={<ObjectMemoryScreen kind="static-mesh" />} />
+        <Route path="/skeletal-mesh-memory" element={<ObjectMemoryScreen kind="skeletal-mesh" />} />
+        <Route path="/static-mesh-component-memory" element={<ObjectMemoryScreen kind="static-mesh-component" />} />
       </Routes>
     </HashRouter>
   )

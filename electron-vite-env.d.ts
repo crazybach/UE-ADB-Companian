@@ -123,6 +123,44 @@ interface TextureMemoryResult {
   error?: string
 }
 
+type ObjectMemoryKind = 'static-mesh' | 'skeletal-mesh' | 'static-mesh-component'
+
+interface ObjectMemoryRow {
+  id: number
+  className: string
+  objectPath: string
+  numKB: number
+  maxKB: number
+  resExcKB: number
+  resExcDedSysKB: number
+  resExcDedVidKB: number
+  resExcUnkKB: number
+}
+
+interface ObjectMemoryReport {
+  kind: ObjectMemoryKind
+  rows: ObjectMemoryRow[]
+  summaryLines: string[]
+  totals: {
+    objectCount: number
+    numKB: number
+    maxKB: number
+    resExcKB: number
+    resExcDedSysKB: number
+    resExcDedVidKB: number
+    resExcUnkKB: number
+  }
+}
+
+interface ObjectMemoryResult {
+  canceled?: boolean
+  success?: boolean
+  path?: string
+  remotePath?: string
+  report?: ObjectMemoryReport
+  error?: string
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -149,12 +187,17 @@ interface ElectronAPI {
   openPullLogsWindow: () => Promise<void>
   openAutoTestWindow: () => Promise<void>
   openTextureMemoryWindow: () => Promise<void>
+  openStaticMeshMemoryWindow: () => Promise<void>
+  openSkeletalMeshMemoryWindow: () => Promise<void>
+  openStaticMeshComponentMemoryWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
   runAutoTestCommand: (command: string) => Promise<AutoTestRunResult>
   openTextureMemreport: () => Promise<TextureMemoryResult>
   captureTextureMemreport: () => Promise<TextureMemoryResult>
+  openObjectMemreport: (kind: ObjectMemoryKind) => Promise<ObjectMemoryResult>
+  captureObjectMemreport: (kind: ObjectMemoryKind) => Promise<ObjectMemoryResult>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void
