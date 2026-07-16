@@ -161,6 +161,37 @@ interface ObjectMemoryResult {
   error?: string
 }
 
+type SettingsFileKind = 'editor-exe' | 'editor-command-line-exe' | 'project'
+type PsoDumpPickerKind = 'pipeline-cache' | 'stable-key-file'
+
+interface SettingsFileResult {
+  canceled: boolean
+  path?: string
+}
+
+interface PsoDumpPathResult {
+  canceled: boolean
+  path?: string
+}
+
+interface PsoDumpRunResult {
+  success: boolean
+  logPath?: string
+  csvPath?: string
+  report?: import('./src/services/pso-dump').PsoDumpReport
+  error?: string
+}
+
+interface PsoCsvResult {
+  canceled?: boolean
+  success?: boolean
+  path?: string
+  stableCsvPath?: string
+  report?: import('./src/services/pso-dump').PsoDumpReport
+  resolvedReferences?: number
+  totalReferences?: number
+  error?: string
+}
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -190,6 +221,8 @@ interface ElectronAPI {
   openStaticMeshMemoryWindow: () => Promise<void>
   openSkeletalMeshMemoryWindow: () => Promise<void>
   openStaticMeshComponentMemoryWindow: () => Promise<void>
+  openSettingsWindow: () => Promise<void>
+  openPsoDumpWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
@@ -198,6 +231,13 @@ interface ElectronAPI {
   captureTextureMemreport: () => Promise<TextureMemoryResult>
   openObjectMemreport: (kind: ObjectMemoryKind) => Promise<ObjectMemoryResult>
   captureObjectMemreport: (kind: ObjectMemoryKind) => Promise<ObjectMemoryResult>
+  selectSettingsFile: (kind: SettingsFileKind) => Promise<SettingsFileResult>
+  selectPsoDumpPath: (kind: PsoDumpPickerKind) => Promise<PsoDumpPathResult>
+  runPsoDump: (config: import('./src/types/config').PsoDumpConfig) => Promise<PsoDumpRunResult>
+  loadPsoDumpCsv: () => Promise<PsoCsvResult>
+  translatePsoDump: (pipelineCsvPath: string) => Promise<PsoCsvResult>
+  openPsoAsset: (assetPath: string) => Promise<{ success: boolean; error?: string }>
+  openPsoOutput: (outputPath: string) => Promise<{ success: boolean; error?: string }>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

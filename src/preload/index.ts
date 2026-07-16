@@ -46,6 +46,8 @@ const electronAPI = {
   openStaticMeshMemoryWindow: () => ipcRenderer.invoke('window:open-static-mesh-memory'),
   openSkeletalMeshMemoryWindow: () => ipcRenderer.invoke('window:open-skeletal-mesh-memory'),
   openStaticMeshComponentMemoryWindow: () => ipcRenderer.invoke('window:open-static-mesh-component-memory'),
+  openSettingsWindow: () => ipcRenderer.invoke('window:open-settings'),
+  openPsoDumpWindow: () => ipcRenderer.invoke('window:open-pso-dump'),
   launchCotfServer: (config: Record<string, unknown>) =>
     ipcRenderer.invoke('cotf:launch-server', config),
   pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
@@ -55,6 +57,13 @@ const electronAPI = {
   captureTextureMemreport: () => ipcRenderer.invoke('texture-memory:capture'),
   openObjectMemreport: (kind: string) => ipcRenderer.invoke('object-memory:open-report', kind),
   captureObjectMemreport: (kind: string) => ipcRenderer.invoke('object-memory:capture', kind),
+  selectSettingsFile: (kind: string) => ipcRenderer.invoke('settings:select-file', kind),
+  selectPsoDumpPath: (kind: string) => ipcRenderer.invoke('pso-dump:select-path', kind),
+  runPsoDump: (config: Record<string, unknown>) => ipcRenderer.invoke('pso-dump:run', config),
+  loadPsoDumpCsv: () => ipcRenderer.invoke('pso-dump:load-csv'),
+  translatePsoDump: (pipelineCsvPath: string) => ipcRenderer.invoke('pso-dump:translate', pipelineCsvPath),
+  openPsoAsset: (assetPath: string) => ipcRenderer.invoke('pso-dump:open-asset', assetPath),
+  openPsoOutput: (outputPath: string) => ipcRenderer.invoke('pso-dump:open-output', outputPath),
 
   // Logcat events (main → renderer)
   onLogcatBatch: (callback: (lines: string[]) => void) => {

@@ -5,6 +5,8 @@ import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
 import { DeviceMonitor } from './services/device-monitor'
 import { parseAutoTestCsv, type AutoTestRow } from '../services/auto-test'
+import { parsePsoDumpCsv, parsePsoDumpLog, serializePsoDumpCsv, translatePipelineCsv, type PsoDumpMode, type PsoDumpReport } from '../services/pso-dump'
+import { DEFAULT_GLOBAL_SETTINGS } from '../types/config'
 import { parseTextureMemoryReport, type TextureMemoryReport } from '../services/texture-memory'
 import {
   OBJECT_MEMORY_DEFINITIONS,
@@ -25,6 +27,8 @@ let textureMemoryWindow: BrowserWindow | null = null
 let staticMeshMemoryWindow: BrowserWindow | null = null
 let skeletalMeshMemoryWindow: BrowserWindow | null = null
 let staticMeshComponentMemoryWindow: BrowserWindow | null = null
+let settingsWindow: BrowserWindow | null = null
+let psoDumpWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -92,6 +96,8 @@ interface ObjectMemoryResult {
   report?: ObjectMemoryReport
   error?: string
 }
+type SettingsFileKind = 'editor-exe' | 'editor-command-line-exe' | 'project'
+
 const isDev = process.env.NODE_ENV === 'development'
 
 function getPreloadPath(): string {
@@ -147,6 +153,7 @@ function broadcastStatus(): void {
   staticMeshMemoryWindow?.webContents.send('adb:connection-status', payload)
   skeletalMeshMemoryWindow?.webContents.send('adb:connection-status', payload)
   staticMeshComponentMemoryWindow?.webContents.send('adb:connection-status', payload)
+  settingsWindow?.webContents.send('adb:connection-status', payload)
 }
 
 function createMainWindow(): void {
@@ -211,6 +218,8 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === staticMeshMemoryWindow) staticMeshMemoryWindow = null
     else if (win === skeletalMeshMemoryWindow) skeletalMeshMemoryWindow = null
     else if (win === staticMeshComponentMemoryWindow) staticMeshComponentMemoryWindow = null
+    else if (win === settingsWindow) settingsWindow = null
+    else if (win === psoDumpWindow) psoDumpWindow = null
   })
 
   return win
@@ -308,6 +317,189 @@ async function pullLogs(config: PullLogsConfig): Promise<PullLogsResult> {
   }
 }
 
+async function selectSettingsFile(kind: SettingsFileKind): Promise<{ canceled: boolean; path?: string }> {
+  const parent = settingsWindow && !settingsWindow.isDestroyed() ? settingsWindow : mainWindow
+  const isProject = kind === 'project'
+  const options: OpenDialogOptions = {
+    title: isProject ? 'Choose Unreal Project' : 'Choose Unreal Editor Executable',
+    filters: isProject
+      ? [{ name: 'Unreal Project', extensions: ['uproject'] }, { name: 'All Files', extensions: ['*'] }]
+      : [{ name: 'Executables', extensions: ['exe'] }, { name: 'All Files', extensions: ['*'] }],
+    properties: ['openFile'],
+  }
+  const result = parent
+    ? await dialog.showOpenDialog(parent, options)
+    : await dialog.showOpenDialog(options)
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true }
+  }
+
+  return { canceled: false, path: result.filePaths[0] }
+}
+
+type PsoDumpPickerKind = 'pipeline-cache' | 'stable-key-file'
+
+interface PsoDumpConfig {
+  mode: PsoDumpMode
+  pipelineCacheFile: string
+  stableKeyFile: string
+}
+
+interface PsoDumpResult {
+  success: boolean
+  logPath?: string
+  csvPath?: string
+  report?: PsoDumpReport
+  error?: string
+}
+
+function readGlobalSettings(): { editorCommandLineExe: string; projectPath: string } {
+  try {
+    const config = JSON.parse(fs.readFileSync(getConfigPath(), 'utf-8')) as { globalSettings?: Record<string, unknown> }
+    const settings = config.globalSettings || {}
+    return {
+      editorCommandLineExe: typeof settings.editorCommandLineExe === 'string'
+        ? settings.editorCommandLineExe.trim()
+        : DEFAULT_GLOBAL_SETTINGS.editorCommandLineExe,
+      projectPath: typeof settings.projectPath === 'string'
+        ? settings.projectPath.trim()
+        : DEFAULT_GLOBAL_SETTINGS.projectPath,
+    }
+  } catch {
+    return {
+      editorCommandLineExe: DEFAULT_GLOBAL_SETTINGS.editorCommandLineExe,
+      projectPath: DEFAULT_GLOBAL_SETTINGS.projectPath,
+    }
+  }
+}
+
+function normalizePsoDumpConfig(value: Record<string, unknown>): PsoDumpConfig {
+  return {
+    mode: value.mode === 'stable-key' || value.useStableKeyFile === true ? 'stable-key' : 'pipeline-cache',
+    pipelineCacheFile: typeof value.pipelineCacheFile === 'string' ? value.pipelineCacheFile.trim() : '',
+    stableKeyFile: typeof value.stableKeyFile === 'string' ? value.stableKeyFile.trim() : '',
+  }
+}
+
+async function selectPsoDumpPath(kind: PsoDumpPickerKind): Promise<{ canceled: boolean; path?: string }> {
+  const parent = psoDumpWindow && !psoDumpWindow.isDestroyed() ? psoDumpWindow : mainWindow
+  const pipelineMode = kind === 'pipeline-cache'
+  const options: OpenDialogOptions = {
+    title: pipelineMode ? 'Choose Pipeline Cache File' : 'Choose Stable Key File',
+    filters: pipelineMode
+      ? [{ name: 'Pipeline Cache', extensions: ['upipelinecache'] }, { name: 'All Files', extensions: ['*'] }]
+      : [{ name: 'Stable Shader Key', extensions: ['shk'] }, { name: 'All Files', extensions: ['*'] }],
+    properties: ['openFile'],
+  }
+  const result = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options)
+  return result.canceled || result.filePaths.length === 0 ? { canceled: true } : { canceled: false, path: result.filePaths[0] }
+}
+
+function getPsoDumpOutputPaths(config: PsoDumpConfig): { logPath: string; csvPath: string } {
+  const inputPath = config.mode === 'stable-key' ? config.stableKeyFile : config.pipelineCacheFile
+  const parsed = path.parse(inputPath)
+  const base = path.join(parsed.dir, `${parsed.name}_pso_dump_${formatTimestampForFilename()}`)
+  return { logPath: `${base}.log`, csvPath: `${base}.csv` }
+}
+
+async function runPsoDump(rawConfig: Record<string, unknown>): Promise<PsoDumpResult> {
+  const config = normalizePsoDumpConfig(rawConfig)
+  const globalSettings = readGlobalSettings()
+  if (!globalSettings.editorCommandLineExe || !fs.existsSync(globalSettings.editorCommandLineExe)) return { success: false, error: 'Set a valid Editor CommandLine EXE in File > Settings.' }
+  if (!globalSettings.projectPath || !fs.existsSync(globalSettings.projectPath)) return { success: false, error: 'Set a valid Project in File > Settings.' }
+
+  const stableMode = config.mode === 'stable-key'
+  const inputPath = stableMode ? config.stableKeyFile : config.pipelineCacheFile
+  if (!inputPath || !fs.existsSync(inputPath)) return { success: false, error: stableMode ? 'Choose a valid .shk stable key file.' : 'Choose a valid .upipelinecache file.' }
+  const args = [globalSettings.projectPath, '-run=ShaderPipelineCacheTools', 'dump', inputPath]
+  const { logPath, csvPath } = getPsoDumpOutputPaths(config)
+
+  try {
+    const { stdout, stderr } = await execFileWithOutput(globalSettings.editorCommandLineExe, args, { maxBuffer: 500 * 1024 * 1024 })
+    const combined = [stdout, stderr].filter(Boolean).join('\r\n')
+    const report = parsePsoDumpLog(combined, config.mode)
+    fs.writeFileSync(logPath, combined, 'utf-8')
+    fs.writeFileSync(csvPath, serializePsoDumpCsv(report), 'utf-8')
+    return { success: true, logPath, csvPath, report }
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string }
+    const combined = [err.stdout || '', err.stderr || '', err.message].filter(Boolean).join('\r\n')
+    try { fs.writeFileSync(logPath, combined, 'utf-8') } catch { /* Preserve the execution error below. */ }
+    return { success: false, logPath, error: err.stderr?.trim() || err.message }
+  }
+}
+
+interface PsoCsvResult {
+  canceled?: boolean
+  success?: boolean
+  path?: string
+  stableCsvPath?: string
+  report?: PsoDumpReport
+  resolvedReferences?: number
+  totalReferences?: number
+  error?: string
+}
+
+async function choosePsoCsv(title: string): Promise<{ canceled: boolean; path?: string }> {
+  const parent = psoDumpWindow && !psoDumpWindow.isDestroyed() ? psoDumpWindow : mainWindow
+  const options: OpenDialogOptions = {
+    title,
+    filters: [{ name: 'PSO Dump CSV', extensions: ['csv'] }, { name: 'All Files', extensions: ['*'] }],
+    properties: ['openFile'],
+  }
+  const result = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options)
+  return result.canceled || result.filePaths.length === 0 ? { canceled: true } : { canceled: false, path: result.filePaths[0] }
+}
+
+async function loadPsoCsv(): Promise<PsoCsvResult> {
+  const selection = await choosePsoCsv('Load PSO Dump CSV')
+  if (selection.canceled || !selection.path) return { canceled: true }
+  try {
+    const report = parsePsoDumpCsv(fs.readFileSync(selection.path, 'utf-8'))
+    return { success: true, path: selection.path, report }
+  } catch (error) {
+    return { success: false, path: selection.path, error: error instanceof Error ? error.message : 'Failed to load PSO CSV.' }
+  }
+}
+
+async function translatePsoCsv(pipelineCsvPath: string): Promise<PsoCsvResult> {
+  if (!pipelineCsvPath || !fs.existsSync(pipelineCsvPath)) return { success: false, error: 'Load or generate a pipeline-cache CSV first.' }
+  const selection = await choosePsoCsv('Choose Stable Key Dump CSV')
+  if (selection.canceled || !selection.path) return { canceled: true }
+  try {
+    const translation = translatePipelineCsv(
+      fs.readFileSync(pipelineCsvPath, 'utf-8'),
+      fs.readFileSync(selection.path, 'utf-8'),
+    )
+    const parsed = path.parse(pipelineCsvPath)
+    const outputPath = path.join(parsed.dir, `${parsed.name}_translated_${formatTimestampForFilename()}.csv`)
+    fs.writeFileSync(outputPath, serializePsoDumpCsv(translation.report), 'utf-8')
+    return {
+      success: true,
+      path: outputPath,
+      stableCsvPath: selection.path,
+      report: translation.report,
+      resolvedReferences: translation.resolvedReferences,
+      totalReferences: translation.totalReferences,
+    }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to translate pipeline shaders.' }
+  }
+}
+async function openPsoAsset(assetPath: string): Promise<{ success: boolean; error?: string }> {
+  if (!assetPath.startsWith('/Game/')) return { success: false, error: 'Only /Game asset paths can be opened in the first iteration.' }
+  const { projectPath } = readGlobalSettings()
+  if (!projectPath) return { success: false, error: 'Project path is not configured.' }
+  const lastSlash = assetPath.lastIndexOf('/')
+  const objectSeparator = assetPath.indexOf('.', lastSlash)
+  const relativeAsset = assetPath.slice('/Game/'.length, objectSeparator >= 0 ? objectSeparator : undefined)
+  const contentPath = path.join(path.dirname(projectPath), 'Content', ...relativeAsset.split('/'))
+  const assetFile = ['.uasset', '.umap'].map((extension) => `${contentPath}${extension}`).find((candidate) => fs.existsSync(candidate))
+  if (!assetFile) return { success: false, error: `Asset file was not found for ${assetPath}.` }
+  const openError = await shell.openPath(assetFile)
+  return openError ? { success: false, error: openError } : { success: true }
+}
 async function openAutoTestCsv(): Promise<AutoTestOpenCsvResult> {
   const parent = autoTestWindow && !autoTestWindow.isDestroyed() ? autoTestWindow : mainWindow
   const options: OpenDialogOptions = {
@@ -820,6 +1012,27 @@ function setupIpcHandlers(): void {
     fs.writeFileSync(getConfigPath(), JSON.stringify(merged, null, 2))
   })
 
+  ipcMain.handle('settings:select-file', async (_event, kind: SettingsFileKind) => {
+    if (kind !== 'editor-exe' && kind !== 'editor-command-line-exe' && kind !== 'project') {
+      return { canceled: true }
+    }
+    return selectSettingsFile(kind)
+  })
+  ipcMain.handle('pso-dump:select-path', async (_event, kind: PsoDumpPickerKind) => {
+    if (kind !== 'pipeline-cache' && kind !== 'stable-key-file') return { canceled: true }
+    return selectPsoDumpPath(kind)
+  })
+
+  ipcMain.handle('pso-dump:run', async (_event, config: Record<string, unknown>) => runPsoDump(config))
+  ipcMain.handle('pso-dump:load-csv', async () => loadPsoCsv())
+  ipcMain.handle('pso-dump:translate', async (_event, pipelineCsvPath: string) => translatePsoCsv(pipelineCsvPath))
+  ipcMain.handle('pso-dump:open-asset', async (_event, assetPath: string) => openPsoAsset(assetPath))
+  ipcMain.handle('pso-dump:open-output', async (_event, outputPath: string) => {
+    if (!outputPath || !fs.existsSync(outputPath)) return { success: false, error: 'Output file was not found.' }
+    const error = await shell.openPath(outputPath)
+    return error ? { success: false, error } : { success: true }
+  })
+
   // ── Logcat ──
 
   ipcMain.handle('adb:start-logcat', async () => {
@@ -960,6 +1173,21 @@ function setupIpcHandlers(): void {
       1280,
       760,
     )
+  })
+
+  ipcMain.handle('window:open-settings', async () => {
+    if (settingsWindow && !settingsWindow.isDestroyed()) {
+      settingsWindow.focus()
+      return
+    }
+    settingsWindow = createToolWindow('Settings', '/settings', 820, 420)
+  })
+  ipcMain.handle('window:open-pso-dump', async () => {
+    if (psoDumpWindow && !psoDumpWindow.isDestroyed()) {
+      psoDumpWindow.focus()
+      return
+    }
+    psoDumpWindow = createToolWindow('PSO Dump', '/pso-dump', 1260, 800)
   })
 }
 

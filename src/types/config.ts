@@ -90,6 +90,30 @@ export const DEFAULT_ADVANCED_LAUNCH_CONFIG: AdvancedLaunchConfig = {
     { id: 'dpcvars-pso-cache', enabled: false, value: 'r.ShaderPipelineCache.StartupMode=0,r.Vulkan.AllowPSOPrecaching=0,r.Vulkan.UseChunkedPSOCache=0' },
   ],
 }
+export interface GlobalSettings {
+  editorExe: string
+  editorCommandLineExe: string
+  projectPath: string
+}
+
+export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+  editorExe: 'D:\\workspace\\client_dev\\UnrealEngine\\Engine\\Binaries\\Win64\\UnrealEditor.exe',
+  editorCommandLineExe: 'D:\\workspace\\client_dev\\UnrealEngine\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe',
+  projectPath: 'D:\\workspace\\client_dev\\boom\\client5\\tankshooter.uproject',
+}
+
+
+export interface PsoDumpConfig {
+  mode: 'pipeline-cache' | 'stable-key'
+  pipelineCacheFile: string
+  stableKeyFile: string
+}
+
+export const DEFAULT_PSO_DUMP_CONFIG: PsoDumpConfig = {
+  mode: 'pipeline-cache',
+  pipelineCacheFile: '',
+  stableKeyFile: '',
+}
 
 export interface AppConfig {
   columns: ColumnDef[]
@@ -102,4 +126,6 @@ export interface AppConfig {
   cotfServer: CotfServerConfig
   cotfClient: CotfClientConfig
   pullLogs: PullLogsConfig
+  globalSettings: GlobalSettings
+  psoDump: PsoDumpConfig
 }

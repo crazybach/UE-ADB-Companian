@@ -17,6 +17,8 @@ export default function MenuBar() {
   const handleOpenStaticMeshMemory = useCallback(() => window.electronAPI.openStaticMeshMemoryWindow(), [])
   const handleOpenSkeletalMeshMemory = useCallback(() => window.electronAPI.openSkeletalMeshMemoryWindow(), [])
   const handleOpenStaticMeshComponentMemory = useCallback(() => window.electronAPI.openStaticMeshComponentMemoryWindow(), [])
+  const handleOpenSettings = useCallback(() => window.electronAPI.openSettingsWindow(), [])
+  const handleOpenPsoDump = useCallback(() => window.electronAPI.openPsoDumpWindow(), [])
   const handleAdvancedLaunch = useCallback(() => {
     window.dispatchEvent(new Event('activity:advanced-launch'))
   }, [])
@@ -40,6 +42,11 @@ export default function MenuBar() {
     <div className={styles.menuBar}>
       <div className={styles.menu}>
         <span className={styles.menuItem}>File</span>
+        <div className={styles.dropdown}>
+          <button className={styles.dropdownItem} onClick={handleOpenSettings}>
+            Settings
+          </button>
+        </div>
       </div>
       <div className={styles.menu}>
         <span className={styles.menuItem}>Tools ▾</span>
@@ -66,6 +73,9 @@ export default function MenuBar() {
             Auto Test
           </button>
 
+          <button className={styles.dropdownItem} onClick={handleOpenPsoDump}>
+            PSO Dump
+          </button>
           <button className={styles.dropdownItem} onClick={handleAdvancedLaunch}>
             Advanced Launch
           </button>

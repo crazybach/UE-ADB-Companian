@@ -5,6 +5,7 @@ import {
   DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
   DEFAULT_COTF_CLIENT_CONFIG,
   DEFAULT_COTF_SERVER_CONFIG,
+  DEFAULT_GLOBAL_SETTINGS,
   DEFAULT_PULL_LOGS_CONFIG,
 } from '../types/config'
 import { DEFAULT_COLUMNS } from '../types/log'
@@ -94,6 +95,15 @@ export function useConfig() {
             pullLogs: {
               ...DEFAULT_PULL_LOGS_CONFIG,
               ...saved.pullLogs,
+            },
+          })
+        }
+
+        if (saved.globalSettings !== undefined) {
+          setConfig({
+            globalSettings: {
+              ...DEFAULT_GLOBAL_SETTINGS,
+              ...saved.globalSettings,
             },
           })
         }

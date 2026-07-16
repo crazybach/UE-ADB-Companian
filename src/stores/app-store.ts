@@ -4,6 +4,8 @@ import {
   DEFAULT_COTF_CLIENT_CONFIG,
   DEFAULT_COTF_SERVER_CONFIG,
   DEFAULT_PULL_LOGS_CONFIG,
+  DEFAULT_GLOBAL_SETTINGS,
+  DEFAULT_PSO_DUMP_CONFIG,
   type AppConfig,
 } from '../types/config'
 import { DEFAULT_COLUMNS } from '../types/log'
@@ -47,6 +49,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     cotfServer: DEFAULT_COTF_SERVER_CONFIG,
     cotfClient: DEFAULT_COTF_CLIENT_CONFIG,
     pullLogs: DEFAULT_PULL_LOGS_CONFIG,
+    globalSettings: DEFAULT_GLOBAL_SETTINGS,
+    psoDump: DEFAULT_PSO_DUMP_CONFIG,
   },
   commandHistory: [],
 

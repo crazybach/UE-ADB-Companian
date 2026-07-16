@@ -1,0 +1,137 @@
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+.header {
+  padding: 8px 12px;
+  color: var(--fg-bright);
+  font-weight: 600;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.loading {
+  padding: 20px;
+  color: var(--fg-muted);
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.table {
+  min-width: 620px;
+  border: 1px solid var(--border-primary);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr) 76px;
+  min-height: 42px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row > * {
+  min-width: 0;
+  padding: 7px 8px;
+  border-right: 1px solid var(--border-primary);
+}
+
+.row > *:last-child {
+  border-right: none;
+}
+
+.row label {
+  display: flex;
+  align-items: center;
+  color: var(--log-info);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.row input {
+  align-self: center;
+  width: 100%;
+  height: var(--input-height);
+  min-width: 0;
+  padding: 4px 7px;
+  border-radius: 3px;
+  background: var(--bg-input);
+  color: var(--fg-primary);
+  font-size: var(--font-size-sm);
+}
+
+.row button {
+  align-self: center;
+  height: var(--input-height);
+  padding: 3px 8px;
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  color: var(--fg-primary);
+  background: var(--bg-tertiary);
+}
+
+.row button:hover {
+  background: var(--bg-hover);
+}
+
+.tableHeader {
+  min-height: 29px;
+  color: var(--fg-muted);
+  background: var(--bg-secondary);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.tableHeader > * {
+  display: flex;
+  align-items: center;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+}
+
+.status {
+  min-width: 0;
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saveButton {
+  height: var(--input-height);
+  min-width: 84px;
+  padding: 3px 16px;
+  border-radius: 3px;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+}
+
+.saveButton:hover:not(:disabled) {
+  background: var(--btn-bg-hover);
+}
+
+.saveButton:disabled {
+  color: var(--fg-muted);
+  cursor: default;
+}

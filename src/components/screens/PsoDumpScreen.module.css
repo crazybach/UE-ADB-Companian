@@ -1,0 +1,35 @@
+.container { height: 100vh; display: grid; grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto; overflow: hidden; background: #1e1e1e; color: #d4d4d4; font: 13px Consolas, "Courier New", monospace; }
+.header { min-height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid #3c3c3c; color: #4ec9b0; font-size: 15px; font-weight: 700; }
+.modeSwitch { display: flex; border: 1px solid #4a4a4a; }
+.modeSwitch button { min-width: 125px; border: 0; border-right: 1px solid #4a4a4a; background: #252526; color: #b8b8b8; padding: 8px 14px; font: inherit; cursor: pointer; }
+.modeSwitch button:last-child { border-right: 0; }
+.modeSwitch .activeMode { background: #0e5f45; color: #fff; }
+.inputs { padding: 12px 14px; display: grid; grid-template-columns: minmax(300px, 1fr) 76px; gap: 8px 10px; border-bottom: 1px solid #3c3c3c; }
+.inputs label { display: grid; grid-template-columns: 155px minmax(0, 1fr); align-items: center; gap: 10px; color: #9cdcfe; }
+.inputs input, .toolbar input, .toolbar select { min-width: 0; box-sizing: border-box; border: 1px solid #454545; background: #252526; color: #d4d4d4; padding: 7px 8px; font: inherit; }
+.inputs button, .toolbar button { border: 1px solid #4a4a4a; background: #333337; color: #d4d4d4; padding: 6px 10px; font: inherit; cursor: pointer; }
+.inputs button:disabled, .toolbar button:disabled { opacity: .5; cursor: default; }
+.summary { min-height: 66px; display: flex; overflow-x: auto; border-bottom: 1px solid #3c3c3c; background: #202020; }
+.summary > div { min-width: 135px; padding: 10px 16px; border-right: 1px solid #333; display: grid; gap: 5px; }
+.summary span { color: #858585; font-size: 11px; text-transform: uppercase; }
+.summary strong { color: #dcdcaa; font-size: 18px; font-weight: 500; }
+.toolbar { display: grid; grid-template-columns: minmax(190px, 1fr) 145px 165px minmax(145px, .8fr) 165px 82px 102px 82px; gap: 8px; padding: 9px 12px; border-bottom: 1px solid #3c3c3c; }
+.pathBar { padding: 7px 12px; color: #858585; border-bottom: 1px solid #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tableScroller { position: relative; min-height: 0; overflow: auto; background: #1e1e1e; }
+.headerRow { position: sticky; top: 0; z-index: 3; display: grid; min-width: max-content; height: 46px; background: #252526; border-bottom: 1px solid #505050; }
+.headerRow button { height: 46px; overflow: hidden; border: 0; border-right: 1px solid #3d3d3d; background: transparent; color: #d4d4d4; padding: 4px 8px; text-align: left; font: inherit; cursor: pointer; }
+.headerRow small, .headerRow span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.headerRow small { color: #858585; font-size: 10px; font-weight: 400; }
+.headerRow span { color: #9cdcfe; margin-top: 3px; font-weight: 700; }
+.virtualBody { position: relative; min-width: max-content; }
+.dataRow { position: absolute; left: 0; top: 0; display: grid; height: 30px; border-bottom: 1px solid #303030; }
+.dataRow:hover { background: #2a2d2e; }
+.dataRow > div { box-sizing: border-box; height: 30px; padding: 6px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; border-right: 1px solid #303030; }
+.groupRow { position: absolute; left: 0; top: 0; box-sizing: border-box; width: 100%; min-width: 100vw; height: 34px; padding: 8px 12px; background: #29343a; color: #4ec9b0; font-weight: 700; border-bottom: 1px solid #44545c; }
+.groupRow span { margin-left: 18px; color: #9aa8ad; font-weight: 400; }
+.empty { padding: 38px; color: #858585; text-align: center; }
+.footer { min-height: 50px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 18px; align-items: center; padding: 0 14px; border-top: 1px solid #3c3c3c; color: #b5cea8; }
+.footer span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.runButton { border: 1px solid #16825d; background: #0e5f45; color: white; padding: 8px 16px; font: inherit; font-weight: 700; cursor: pointer; }
+.runButton:disabled { opacity: .55; cursor: default; }
+@media (max-width: 900px) { .toolbar { grid-template-columns: minmax(180px, 1fr) 150px 165px; } .inputs label { grid-template-columns: 125px minmax(0, 1fr); } }
