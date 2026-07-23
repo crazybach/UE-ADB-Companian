@@ -144,6 +144,7 @@
 }
 
 .footerStatus {
+  flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -158,4 +159,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.footerActions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.scrollLock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-primary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.scrollLock input {
+  margin: 0;
 }
