@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, shell, type OpenDialogOptions } from 'electron'
 import { execFile } from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -23,12 +23,14 @@ let cotfServerWindow: BrowserWindow | null = null
 let cotfClientWindow: BrowserWindow | null = null
 let pullLogsWindow: BrowserWindow | null = null
 let autoTestWindow: BrowserWindow | null = null
+let remoteAutoTestWindow: BrowserWindow | null = null
 let textureMemoryWindow: BrowserWindow | null = null
 let staticMeshMemoryWindow: BrowserWindow | null = null
 let skeletalMeshMemoryWindow: BrowserWindow | null = null
 let staticMeshComponentMemoryWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let psoDumpWindow: BrowserWindow | null = null
+let remoteCommandWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -214,12 +216,14 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === cotfClientWindow) cotfClientWindow = null
     else if (win === pullLogsWindow) pullLogsWindow = null
     else if (win === autoTestWindow) autoTestWindow = null
+    else if (win === remoteAutoTestWindow) remoteAutoTestWindow = null
     else if (win === textureMemoryWindow) textureMemoryWindow = null
     else if (win === staticMeshMemoryWindow) staticMeshMemoryWindow = null
     else if (win === skeletalMeshMemoryWindow) skeletalMeshMemoryWindow = null
     else if (win === staticMeshComponentMemoryWindow) staticMeshComponentMemoryWindow = null
     else if (win === settingsWindow) settingsWindow = null
     else if (win === psoDumpWindow) psoDumpWindow = null
+    else if (win === remoteCommandWindow) remoteCommandWindow = null
   })
 
   return win
@@ -500,8 +504,60 @@ async function openPsoAsset(assetPath: string): Promise<{ success: boolean; erro
   const openError = await shell.openPath(assetFile)
   return openError ? { success: false, error: openError } : { success: true }
 }
-async function openAutoTestCsv(): Promise<AutoTestOpenCsvResult> {
-  const parent = autoTestWindow && !autoTestWindow.isDestroyed() ? autoTestWindow : mainWindow
+
+interface RemoteCommandResult {
+  success: boolean
+  url?: string
+  curlCommand?: string
+  statusCode?: number
+  response?: string
+  error?: string
+}
+
+async function sendRemoteCommand(
+  rawHost: string,
+  rawPort: string,
+  rawCommand: string,
+): Promise<RemoteCommandResult> {
+  const host = rawHost.trim().replace(/^\[|\]$/g, '')
+  const port = rawPort.trim()
+  const command = rawCommand.trim()
+
+  if (!host || /[\s/?#@\\]/.test(host)) {
+    return { success: false, error: 'Enter a valid device IP address or host name.' }
+  }
+  if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
+    return { success: false, error: 'Port must be a number from 1 to 65535.' }
+  }
+  if (!command) return { success: false, error: 'Enter a command.' }
+
+  const urlHost = host.includes(':') ? `[${host}]` : host
+  const url = `http://${urlHost}:${port}/exec?c=${encodeURIComponent(command)}`
+  const curlCommand = `curl "${url}"`
+
+  try {
+    const response = await net.fetch(url, { signal: AbortSignal.timeout(15_000) })
+    const responseBody = await response.text()
+    return {
+      success: response.ok,
+      url,
+      curlCommand,
+      statusCode: response.status,
+      response: responseBody,
+      error: response.ok ? undefined : `HTTP ${response.status} ${response.statusText}`.trim(),
+    }
+  } catch (error) {
+    return {
+      success: false,
+      url,
+      curlCommand,
+      error: error instanceof Error ? error.message : 'Failed to send the remote command.',
+    }
+  }
+}
+
+async function openAutoTestCsv(parentWindow = autoTestWindow): Promise<AutoTestOpenCsvResult> {
+  const parent = parentWindow && !parentWindow.isDestroyed() ? parentWindow : mainWindow
   const options: OpenDialogOptions = {
     title: 'Open Auto Test CSV',
     filters: [
@@ -944,6 +1000,10 @@ function setupIpcHandlers(): void {
     return openAutoTestCsv()
   })
 
+  ipcMain.handle('remote-autotest:open-csv', async () => {
+    return openAutoTestCsv(remoteAutoTestWindow)
+  })
+
   ipcMain.handle('autotest:run-command', async (_event, command: string) => {
     if (!command.trim()) {
       return {
@@ -1032,6 +1092,10 @@ function setupIpcHandlers(): void {
     const error = await shell.openPath(outputPath)
     return error ? { success: false, error } : { success: true }
   })
+  ipcMain.handle(
+    'remote-command:send',
+    async (_event, host: string, port: string, command: string) => sendRemoteCommand(host, port, command),
+  )
 
   // ── Logcat ──
 
@@ -1138,6 +1202,13 @@ function setupIpcHandlers(): void {
     }
     autoTestWindow = createToolWindow('Auto Test', '/auto-test', 900, 640)
   })
+  ipcMain.handle('window:open-remote-auto-test', async () => {
+    if (remoteAutoTestWindow && !remoteAutoTestWindow.isDestroyed()) {
+      remoteAutoTestWindow.focus()
+      return
+    }
+    remoteAutoTestWindow = createToolWindow('Remote Auto Test', '/remote-auto-test', 940, 700)
+  })
 
   ipcMain.handle('window:open-texture-memory', async () => {
     if (textureMemoryWindow && !textureMemoryWindow.isDestroyed()) {
@@ -1188,6 +1259,13 @@ function setupIpcHandlers(): void {
       return
     }
     psoDumpWindow = createToolWindow('PSO Dump', '/pso-dump', 1260, 800)
+  })
+  ipcMain.handle('window:open-remote-command', async () => {
+    if (remoteCommandWindow && !remoteCommandWindow.isDestroyed()) {
+      remoteCommandWindow.focus()
+      return
+    }
+    remoteCommandWindow = createToolWindow('Remote Command Line', '/remote-command', 820, 520)
   })
 }
 

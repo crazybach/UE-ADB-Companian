@@ -192,6 +192,16 @@ interface PsoCsvResult {
   totalReferences?: number
   error?: string
 }
+
+interface RemoteCommandResult {
+  success: boolean
+  url?: string
+  curlCommand?: string
+  statusCode?: number
+  response?: string
+  error?: string
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -217,15 +227,18 @@ interface ElectronAPI {
   openCotfClientWindow: () => Promise<void>
   openPullLogsWindow: () => Promise<void>
   openAutoTestWindow: () => Promise<void>
+  openRemoteAutoTestWindow: () => Promise<void>
   openTextureMemoryWindow: () => Promise<void>
   openStaticMeshMemoryWindow: () => Promise<void>
   openSkeletalMeshMemoryWindow: () => Promise<void>
   openStaticMeshComponentMemoryWindow: () => Promise<void>
   openSettingsWindow: () => Promise<void>
   openPsoDumpWindow: () => Promise<void>
+  openRemoteCommandWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
+  openRemoteAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
   runAutoTestCommand: (command: string) => Promise<AutoTestRunResult>
   openTextureMemreport: () => Promise<TextureMemoryResult>
   captureTextureMemreport: () => Promise<TextureMemoryResult>
@@ -238,6 +251,7 @@ interface ElectronAPI {
   translatePsoDump: (pipelineCsvPath: string) => Promise<PsoCsvResult>
   openPsoAsset: (assetPath: string) => Promise<{ success: boolean; error?: string }>
   openPsoOutput: (outputPath: string) => Promise<{ success: boolean; error?: string }>
+  sendRemoteCommand: (host: string, port: string, command: string) => Promise<RemoteCommandResult>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

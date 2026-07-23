@@ -5,12 +5,14 @@ interface AutocompleteDropdownProps {
   items: string[]
   selectedIndex: number
   onSelect: (item: string) => void
+  placement?: 'top' | 'bottom'
 }
 
 export default function AutocompleteDropdown({
   items,
   selectedIndex,
   onSelect,
+  placement = 'bottom',
 }: AutocompleteDropdownProps) {
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -26,7 +28,10 @@ export default function AutocompleteDropdown({
   if (items.length === 0) return null
 
   return (
-    <div className={styles.dropdown} ref={listRef}>
+    <div
+      className={`${styles.dropdown} ${placement === 'top' ? styles.top : ''}`}
+      ref={listRef}
+    >
       {items.map((item, i) => (
         <div
           key={item}

@@ -6,9 +6,13 @@ import styles from './CommandSection.module.css'
 
 interface CommandSectionProps {
   onSend: (cmd: string) => void
+  autocompletePlacement?: 'top' | 'bottom'
 }
 
-export default function CommandSection({ onSend }: CommandSectionProps) {
+export default function CommandSection({
+  onSend,
+  autocompletePlacement = 'bottom',
+}: CommandSectionProps) {
   const [input, setInput] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [dropdownMode, setDropdownMode] = useState<'autocomplete' | 'history'>('autocomplete')
@@ -134,6 +138,7 @@ export default function CommandSection({ onSend }: CommandSectionProps) {
             items={dropdownItems}
             selectedIndex={selectedIndex}
             onSelect={handleSelectItem}
+            placement={autocompletePlacement}
           />
         )}
       </div>

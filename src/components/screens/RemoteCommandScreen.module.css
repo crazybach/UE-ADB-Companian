@@ -1,0 +1,117 @@
+.container {
+  height: 100%;
+  min-width: 520px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.header {
+  flex: none;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: var(--fg-bright);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.connectionBar {
+  flex: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.hostField,
+.portField {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+}
+
+.hostField input,
+.portField input {
+  width: 100%;
+  height: var(--input-height);
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+
+.resultArea {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+}
+
+.resultBlock + .resultBlock {
+  margin-top: 12px;
+}
+
+.resultLabel {
+  margin-bottom: 5px;
+  color: var(--log-info);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.request,
+.response,
+.error {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--fg-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  font: inherit;
+}
+
+.error {
+  color: var(--log-error);
+  border-color: var(--log-error);
+}
+
+.commandArea {
+  flex: none;
+  padding: 6px 12px 10px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+}
+
+.status {
+  height: 18px;
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+}
+
+.status[data-success='true'] {
+  color: var(--log-info);
+}
+
+@media (max-width: 620px) {
+  .container {
+    min-width: 0;
+  }
+
+  .connectionBar {
+    grid-template-columns: 1fr;
+  }
+
+  .portField {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+}

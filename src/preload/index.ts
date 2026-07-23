@@ -42,16 +42,19 @@ const electronAPI = {
   openCotfClientWindow: () => ipcRenderer.invoke('window:open-cotf-client'),
   openPullLogsWindow: () => ipcRenderer.invoke('window:open-pull-logs'),
   openAutoTestWindow: () => ipcRenderer.invoke('window:open-auto-test'),
+  openRemoteAutoTestWindow: () => ipcRenderer.invoke('window:open-remote-auto-test'),
   openTextureMemoryWindow: () => ipcRenderer.invoke('window:open-texture-memory'),
   openStaticMeshMemoryWindow: () => ipcRenderer.invoke('window:open-static-mesh-memory'),
   openSkeletalMeshMemoryWindow: () => ipcRenderer.invoke('window:open-skeletal-mesh-memory'),
   openStaticMeshComponentMemoryWindow: () => ipcRenderer.invoke('window:open-static-mesh-component-memory'),
   openSettingsWindow: () => ipcRenderer.invoke('window:open-settings'),
   openPsoDumpWindow: () => ipcRenderer.invoke('window:open-pso-dump'),
+  openRemoteCommandWindow: () => ipcRenderer.invoke('window:open-remote-command'),
   launchCotfServer: (config: Record<string, unknown>) =>
     ipcRenderer.invoke('cotf:launch-server', config),
   pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
   openAutoTestCsv: () => ipcRenderer.invoke('autotest:open-csv'),
+  openRemoteAutoTestCsv: () => ipcRenderer.invoke('remote-autotest:open-csv'),
   runAutoTestCommand: (command: string) => ipcRenderer.invoke('autotest:run-command', command),
   openTextureMemreport: () => ipcRenderer.invoke('texture-memory:open-report'),
   captureTextureMemreport: () => ipcRenderer.invoke('texture-memory:capture'),
@@ -64,6 +67,8 @@ const electronAPI = {
   translatePsoDump: (pipelineCsvPath: string) => ipcRenderer.invoke('pso-dump:translate', pipelineCsvPath),
   openPsoAsset: (assetPath: string) => ipcRenderer.invoke('pso-dump:open-asset', assetPath),
   openPsoOutput: (outputPath: string) => ipcRenderer.invoke('pso-dump:open-output', outputPath),
+  sendRemoteCommand: (host: string, port: string, command: string) =>
+    ipcRenderer.invoke('remote-command:send', host, port, command),
 
   // Logcat events (main → renderer)
   onLogcatBatch: (callback: (lines: string[]) => void) => {
