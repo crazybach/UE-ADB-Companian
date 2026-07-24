@@ -31,6 +31,7 @@ let staticMeshComponentMemoryWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let psoDumpWindow: BrowserWindow | null = null
 let remoteCommandWindow: BrowserWindow | null = null
+let niagaraDebuggerWindow: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -224,6 +225,7 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === settingsWindow) settingsWindow = null
     else if (win === psoDumpWindow) psoDumpWindow = null
     else if (win === remoteCommandWindow) remoteCommandWindow = null
+    else if (win === niagaraDebuggerWindow) niagaraDebuggerWindow = null
   })
 
   return win
@@ -553,6 +555,100 @@ async function sendRemoteCommand(
       curlCommand,
       error: error instanceof Error ? error.message : 'Failed to send the remote command.',
     }
+  }
+}
+
+interface NiagaraAssetResult {
+  canceled: boolean
+  path?: string
+  systemPath?: string
+  error?: string
+}
+
+function readNiagaraLastAssetDirectory(): string {
+  try {
+    const config = JSON.parse(fs.readFileSync(getConfigPath(), 'utf-8')) as {
+      niagaraDebugger?: { lastAssetDirectory?: unknown }
+    }
+    const directory = config.niagaraDebugger?.lastAssetDirectory
+    return typeof directory === 'string' && fs.existsSync(directory) ? directory : ''
+  } catch {
+    return ''
+  }
+}
+
+function saveNiagaraLastAssetDirectory(directory: string): void {
+  const configPath = getConfigPath()
+  fs.mkdirSync(path.dirname(configPath), { recursive: true })
+  let config: Record<string, unknown> = {}
+  try {
+    config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as Record<string, unknown>
+  } catch {
+    // Create a new config when the existing file is missing or invalid.
+  }
+  const currentNiagara = config.niagaraDebugger && typeof config.niagaraDebugger === 'object'
+    ? config.niagaraDebugger as Record<string, unknown>
+    : {}
+  config.niagaraDebugger = { ...currentNiagara, lastAssetDirectory: directory }
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+}
+
+async function selectNiagaraAsset(): Promise<NiagaraAssetResult> {
+  const parent = niagaraDebuggerWindow && !niagaraDebuggerWindow.isDestroyed()
+    ? niagaraDebuggerWindow
+    : mainWindow
+  const { projectPath } = readGlobalSettings()
+  if (!projectPath || !fs.existsSync(projectPath)) {
+    return {
+      canceled: false,
+      error: 'Set a valid Unreal Project path in File > Settings before choosing an asset.',
+    }
+  }
+  const contentRoot = path.join(path.dirname(projectPath), 'Content')
+  if (!fs.existsSync(contentRoot)) {
+    return { canceled: false, error: `Project Content directory was not found: ${contentRoot}` }
+  }
+  const lastAssetDirectory = readNiagaraLastAssetDirectory()
+  const lastDirectoryRelative = lastAssetDirectory ? path.relative(contentRoot, lastAssetDirectory) : ''
+  const lastDirectoryInProject = lastAssetDirectory
+    && !path.isAbsolute(lastDirectoryRelative)
+    && lastDirectoryRelative !== '..'
+    && !lastDirectoryRelative.startsWith(`..${path.sep}`)
+  const options: OpenDialogOptions = {
+    title: 'Choose Niagara System Asset',
+    defaultPath: lastDirectoryInProject ? lastAssetDirectory : contentRoot,
+    filters: [
+      { name: 'Unreal Assets', extensions: ['uasset'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+    properties: ['openFile'],
+  }
+  const result = parent
+    ? await dialog.showOpenDialog(parent, options)
+    : await dialog.showOpenDialog(options)
+  if (result.canceled || result.filePaths.length === 0) return { canceled: true }
+
+  const assetPath = result.filePaths[0]
+  if (path.extname(assetPath).toLowerCase() !== '.uasset') {
+    return { canceled: false, path: assetPath, error: 'Choose a .uasset file.' }
+  }
+  const relativePath = path.relative(contentRoot, assetPath)
+  if (path.isAbsolute(relativePath) || relativePath === '..' || relativePath.startsWith(`..${path.sep}`)) {
+    return {
+      canceled: false,
+      path: assetPath,
+      error: `The selected asset must be inside ${contentRoot}.`,
+    }
+  }
+  saveNiagaraLastAssetDirectory(path.dirname(assetPath))
+
+  const relativeWithoutExtension = relativePath.slice(0, -path.extname(relativePath).length)
+  const packagePath = relativeWithoutExtension.split(path.sep).join('/')
+  const assetName = path.basename(relativeWithoutExtension)
+  return {
+    canceled: false,
+    path: assetPath,
+    systemPath: `/Game/${packagePath}.${assetName}`,
   }
 }
 
@@ -1096,6 +1192,7 @@ function setupIpcHandlers(): void {
     'remote-command:send',
     async (_event, host: string, port: string, command: string) => sendRemoteCommand(host, port, command),
   )
+  ipcMain.handle('niagara-debugger:select-asset', async () => selectNiagaraAsset())
 
   // ── Logcat ──
 
@@ -1266,6 +1363,13 @@ function setupIpcHandlers(): void {
       return
     }
     remoteCommandWindow = createToolWindow('Remote Command Line', '/remote-command', 820, 520)
+  })
+  ipcMain.handle('window:open-niagara-debugger', async () => {
+    if (niagaraDebuggerWindow && !niagaraDebuggerWindow.isDestroyed()) {
+      niagaraDebuggerWindow.focus()
+      return
+    }
+    niagaraDebuggerWindow = createToolWindow('Niagara Debugger', '/niagara-debugger', 920, 760)
   })
 }
 

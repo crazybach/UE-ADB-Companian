@@ -21,6 +21,7 @@ export default function MenuBar() {
   const handleOpenSettings = useCallback(() => window.electronAPI.openSettingsWindow(), [])
   const handleOpenPsoDump = useCallback(() => window.electronAPI.openPsoDumpWindow(), [])
   const handleOpenRemoteCommand = useCallback(() => window.electronAPI.openRemoteCommandWindow(), [])
+  const handleOpenNiagaraDebugger = useCallback(() => window.electronAPI.openNiagaraDebuggerWindow(), [])
   const handleAdvancedLaunch = useCallback(() => {
     window.dispatchEvent(new Event('activity:advanced-launch'))
   }, [])
@@ -83,6 +84,9 @@ export default function MenuBar() {
           </button>
           <button className={styles.dropdownItem} onClick={handleOpenRemoteCommand}>
             Remote Command Line
+          </button>
+          <button className={styles.dropdownItem} onClick={handleOpenNiagaraDebugger}>
+            Niagara Debugger
           </button>
           <button className={styles.dropdownItem} onClick={handleAdvancedLaunch}>
             Advanced Launch

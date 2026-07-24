@@ -1,0 +1,244 @@
+.container {
+  height: 100%;
+  min-width: 680px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.header {
+  flex: none;
+  padding: 8px 12px;
+  color: var(--fg-bright);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  font-weight: 600;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.section {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.sectionTitle {
+  margin-bottom: 10px;
+  color: var(--log-info);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.connectionGrid {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1fr) 150px;
+  align-items: end;
+  gap: 12px;
+}
+
+.field,
+.portField,
+.modeField,
+.axisField {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+}
+
+.field input,
+.portField input,
+.modeField select,
+.axisField input,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 3px;
+}
+
+.field input,
+.portField input,
+.modeField select,
+.axisField input {
+  height: var(--input-height);
+}
+
+.modeField {
+  max-width: 420px;
+}
+
+.debugControls {
+  display: grid;
+  grid-template-columns: minmax(260px, 420px) auto;
+  align-items: end;
+  gap: 20px;
+}
+
+.checkField {
+  height: var(--input-height);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-primary);
+  font-size: var(--font-size-sm);
+}
+
+.checkField input {
+  margin: 0;
+}
+
+.segmented {
+  display: flex;
+  height: var(--input-height);
+}
+
+.segmented button {
+  min-width: 72px;
+  padding: 3px 12px;
+  color: var(--fg-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 0;
+  font-size: var(--font-size-sm);
+}
+
+.segmented button:first-child {
+  border-radius: 3px 0 0 3px;
+}
+
+.segmented button:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+.segmented button + button {
+  border-left: 0;
+}
+
+.segmented .activeSegment {
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+}
+
+.previewSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-bottom: 0;
+}
+
+.previewSection .sectionTitle {
+  margin-bottom: 0;
+}
+
+.assetRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.optionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+}
+
+.optionsRow label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-primary);
+  font-size: var(--font-size-sm);
+}
+
+.optionsRow input {
+  margin: 0;
+}
+
+.locationRow {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(90px, 1fr));
+  align-items: end;
+  gap: 10px;
+}
+
+.field textarea {
+  min-height: 68px;
+  padding: 7px 8px;
+  resize: vertical;
+  color: var(--fg-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  font: inherit;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.secondaryButton,
+.primaryButton {
+  height: var(--input-height);
+  padding: 3px 18px;
+  border-radius: 3px;
+  font-size: var(--font-size-sm);
+}
+
+.secondaryButton {
+  color: var(--fg-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.primaryButton {
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--btn-bg-hover);
+}
+
+.status {
+  flex: none;
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 6px 12px;
+  overflow: hidden;
+  color: var(--fg-muted);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .container {
+    min-width: 0;
+  }
+
+  .connectionGrid,
+  .locationRow,
+  .debugControls {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .segmented {
+    width: fit-content;
+  }
+}

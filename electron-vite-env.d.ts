@@ -202,6 +202,13 @@ interface RemoteCommandResult {
   error?: string
 }
 
+interface NiagaraAssetResult {
+  canceled: boolean
+  path?: string
+  systemPath?: string
+  error?: string
+}
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -235,6 +242,7 @@ interface ElectronAPI {
   openSettingsWindow: () => Promise<void>
   openPsoDumpWindow: () => Promise<void>
   openRemoteCommandWindow: () => Promise<void>
+  openNiagaraDebuggerWindow: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
@@ -252,6 +260,7 @@ interface ElectronAPI {
   openPsoAsset: (assetPath: string) => Promise<{ success: boolean; error?: string }>
   openPsoOutput: (outputPath: string) => Promise<{ success: boolean; error?: string }>
   sendRemoteCommand: (host: string, port: string, command: string) => Promise<RemoteCommandResult>
+  selectNiagaraAsset: () => Promise<NiagaraAssetResult>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

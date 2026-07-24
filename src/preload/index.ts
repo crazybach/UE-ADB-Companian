@@ -50,6 +50,7 @@ const electronAPI = {
   openSettingsWindow: () => ipcRenderer.invoke('window:open-settings'),
   openPsoDumpWindow: () => ipcRenderer.invoke('window:open-pso-dump'),
   openRemoteCommandWindow: () => ipcRenderer.invoke('window:open-remote-command'),
+  openNiagaraDebuggerWindow: () => ipcRenderer.invoke('window:open-niagara-debugger'),
   launchCotfServer: (config: Record<string, unknown>) =>
     ipcRenderer.invoke('cotf:launch-server', config),
   pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
@@ -69,6 +70,7 @@ const electronAPI = {
   openPsoOutput: (outputPath: string) => ipcRenderer.invoke('pso-dump:open-output', outputPath),
   sendRemoteCommand: (host: string, port: string, command: string) =>
     ipcRenderer.invoke('remote-command:send', host, port, command),
+  selectNiagaraAsset: () => ipcRenderer.invoke('niagara-debugger:select-asset'),
 
   // Logcat events (main → renderer)
   onLogcatBatch: (callback: (lines: string[]) => void) => {
