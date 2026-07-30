@@ -147,6 +147,7 @@ export default function CommandPalette2Screen() {
       const result = await window.electronAPI.saveCommandShortcut({
         name: copyName,
         section: shortcut.section,
+        description: shortcut.description,
         stateSwitch: shortcut.stateSwitch,
         defaultState: shortcut.defaultState,
         commands: shortcut.commands.map((step) => ({ ...step })),
@@ -260,7 +261,9 @@ export default function CommandPalette2Screen() {
                         <label
                           className={`${styles.shortcutButton} ${styles.switchButton}`}
                           data-disabled={Boolean(runningShortcutId || copyingShortcutId)}
-                          title={`${shortcut.commands.length} state command(s)`}
+                          title={shortcut.description
+                            ? `${shortcut.description}\n${shortcut.commands.length} state command(s)`
+                            : `${shortcut.commands.length} state command(s)`}
                         >
                           <input
                             type="checkbox"
@@ -275,7 +278,9 @@ export default function CommandPalette2Screen() {
                           className={styles.shortcutButton}
                           onClick={() => void runShortcut(shortcut)}
                           disabled={Boolean(runningShortcutId || copyingShortcutId)}
-                          title={`${shortcut.commands.length} command(s)`}
+                          title={shortcut.description
+                            ? `${shortcut.description}\n${shortcut.commands.length} command(s)`
+                            : `${shortcut.commands.length} command(s)`}
                           type="button"
                         >
                           {runningShortcutId === shortcut.id ? 'Running...' : shortcut.name}

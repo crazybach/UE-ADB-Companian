@@ -21,6 +21,7 @@ export default function ShortcutEditorDialog({
 }: ShortcutEditorDialogProps) {
   const [name, setName] = useState('')
   const [section, setSection] = useState('Global')
+  const [description, setDescription] = useState('')
   const [stateSwitch, setStateSwitch] = useState(false)
   const [defaultState, setDefaultState] = useState(false)
   const [commands, setCommands] = useState<CommandShortcutStep[]>([emptyStep()])
@@ -28,6 +29,7 @@ export default function ShortcutEditorDialog({
   useEffect(() => {
     setName(shortcut?.name ?? '')
     setSection(shortcut?.section ?? 'Global')
+    setDescription(shortcut?.description ?? '')
     setStateSwitch(shortcut?.stateSwitch ?? false)
     setDefaultState(shortcut?.defaultState ?? false)
     setCommands(shortcut?.commands.map((step) => ({ ...step })) ?? [
@@ -68,6 +70,15 @@ export default function ShortcutEditorDialog({
               <input value={section} onChange={(event) => setSection(event.target.value)} />
             </label>
           </div>
+
+          <label className={styles.descriptionField}>
+            <span>Description</span>
+            <input
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Shown when hovering over the shortcut"
+            />
+          </label>
 
           <div className={styles.switchOptions}>
             <label>
@@ -150,6 +161,7 @@ export default function ShortcutEditorDialog({
               id: shortcut?.id,
               name: name.trim(),
               section: section.trim(),
+              description: description.trim(),
               stateSwitch,
               defaultState: stateSwitch && defaultState,
               commands: validCommands.map((step) => ({

@@ -1,0 +1,11 @@
+{
+  "id": "88dc847d-b3f7-4ab2-b879-1311fd4be405",
+  "name": "Show Command",
+  "section": "Global",
+  "stateSwitch": false,
+  "defaultState": false,
+  "commands": [
+    { "command": "stat fps", "waitSeconds": 1 },
+    { "command": "stat unit", "waitSeconds": 1 }
+  ]
+}

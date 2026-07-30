@@ -178,6 +178,28 @@ function migratePaletteStateSwitches(shortcutsDir: string): void {
   fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8')
 }
 
+function seedCurrentCommandShortcuts(shortcutsDir: string): void {
+  const markerPath = path.join(shortcutsDir, '.palette-v3-current-defaults')
+  if (fs.existsSync(markerPath)) return
+
+  const bundledDir = path.join(getDataPath(), 'shortcuts')
+  const currentDefaults = [
+    '171322f0-1b76-4024-aa31-452f4907ff2b.json',
+    '88dc847d-b3f7-4ab2-b879-1311fd4be405.json',
+    '8c542ba1-a565-47a0-b1e2-4798c406dfff.json',
+  ]
+  if (!fs.existsSync(bundledDir)) return
+
+  for (const filename of currentDefaults) {
+    const source = path.join(bundledDir, filename)
+    const destination = path.join(shortcutsDir, filename)
+    if (fs.existsSync(source) && !fs.existsSync(destination)) {
+      fs.copyFileSync(source, destination)
+    }
+  }
+  fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8')
+}
+
 function normalizeShortcutStep(value: unknown): CommandShortcutStep | null {
   if (!value || typeof value !== 'object') return null
   const candidate = value as Record<string, unknown>
@@ -195,12 +217,13 @@ function normalizeShortcut(value: unknown, expectedId?: string): CommandShortcut
   const id = expectedId ?? (typeof candidate.id === 'string' ? candidate.id : '')
   const name = typeof candidate.name === 'string' ? candidate.name.trim() : ''
   const section = typeof candidate.section === 'string' ? candidate.section.trim() : ''
+  const description = typeof candidate.description === 'string' ? candidate.description.trim() : ''
   const stateSwitch = candidate.stateSwitch === true
   const defaultState = stateSwitch && candidate.defaultState === true
   const rawCommands = Array.isArray(candidate.commands) ? candidate.commands : []
   const commands = rawCommands.map(normalizeShortcutStep).filter((step): step is CommandShortcutStep => Boolean(step))
   if (!/^[a-zA-Z0-9_-]+$/.test(id) || !name || !section || !commands.length) return null
-  return { id, name, section, stateSwitch, defaultState, commands }
+  return { id, name, section, description, stateSwitch, defaultState, commands }
 }
 
 function listCommandShortcuts(): CommandShortcut[] {
@@ -208,6 +231,7 @@ function listCommandShortcuts(): CommandShortcut[] {
   fs.mkdirSync(shortcutsDir, { recursive: true })
   seedBundledCommandShortcuts(shortcutsDir)
   migratePaletteStateSwitches(shortcutsDir)
+  seedCurrentCommandShortcuts(shortcutsDir)
   const shortcuts: CommandShortcut[] = []
 
   for (const entry of fs.readdirSync(shortcutsDir, { withFileTypes: true })) {

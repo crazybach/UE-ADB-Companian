@@ -59,6 +59,21 @@
   border-radius: 3px;
 }
 
+.descriptionField {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+}
+
+.descriptionField input {
+  width: 100%;
+  height: var(--input-height);
+  border-radius: 3px;
+}
+
 .switchOptions {
   flex: none;
   display: flex;

@@ -7,6 +7,7 @@ export interface CommandShortcut {
   id: string
   name: string
   section: string
+  description: string
   stateSwitch: boolean
   defaultState: boolean
   commands: CommandShortcutStep[]
@@ -16,6 +17,7 @@ export interface CommandShortcutSaveInput {
   id?: string
   name: string
   section: string
+  description: string
   stateSwitch: boolean
   defaultState: boolean
   commands: CommandShortcutStep[]
