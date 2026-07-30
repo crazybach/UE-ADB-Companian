@@ -1,0 +1,8 @@
+{
+  "id": "palette-ui-info-widgets",
+  "name": "Info Widgets",
+  "section": "UI Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [{ "command": "Slate.GameLayer.PlayerCanvasVisible", "waitSeconds": 0 }]
+}

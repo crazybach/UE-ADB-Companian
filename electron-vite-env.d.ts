@@ -209,6 +209,11 @@ interface NiagaraAssetResult {
   error?: string
 }
 
+type CommandShortcut = import('./src/types/command-shortcut').CommandShortcut
+type CommandShortcutSaveInput = import('./src/types/command-shortcut').CommandShortcutSaveInput
+type CommandShortcutListResult = import('./src/types/command-shortcut').CommandShortcutListResult
+type CommandShortcutSaveResult = import('./src/types/command-shortcut').CommandShortcutSaveResult
+
 interface ElectronAPI {
   sendCommand: (cmd: string) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
@@ -243,6 +248,7 @@ interface ElectronAPI {
   openPsoDumpWindow: () => Promise<void>
   openRemoteCommandWindow: () => Promise<void>
   openNiagaraDebuggerWindow: () => Promise<void>
+  openCommandPalette2Window: () => Promise<void>
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
@@ -261,6 +267,9 @@ interface ElectronAPI {
   openPsoOutput: (outputPath: string) => Promise<{ success: boolean; error?: string }>
   sendRemoteCommand: (host: string, port: string, command: string) => Promise<RemoteCommandResult>
   selectNiagaraAsset: () => Promise<NiagaraAssetResult>
+  listCommandShortcuts: () => Promise<CommandShortcutListResult>
+  saveCommandShortcut: (shortcut: CommandShortcutSaveInput) => Promise<CommandShortcutSaveResult>
+  deleteCommandShortcut: (id: string) => Promise<{ success: boolean; error?: string }>
 
   onLogcatBatch: (callback: (lines: string[]) => void) => () => void
   onLogcatStatus: (callback: (status: 'started' | 'stopped' | 'error', message?: string) => void) => () => void

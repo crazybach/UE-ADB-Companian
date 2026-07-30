@@ -1,0 +1,207 @@
+.container {
+  height: 100%;
+  min-width: 700px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.header {
+  flex: none;
+  padding: 8px 12px;
+  color: var(--fg-bright);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  font-weight: 600;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.section {
+  flex: none;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.sectionTitle {
+  margin-bottom: 10px;
+  color: var(--log-info);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.connectionGrid {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1fr) 150px;
+  align-items: end;
+  gap: 12px;
+}
+
+.field,
+.portField {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+}
+
+.field input,
+.portField input {
+  width: 100%;
+  height: var(--input-height);
+  border-radius: 3px;
+}
+
+.segmented { display: flex; height: var(--input-height); }
+
+.segmented button {
+  min-width: 72px;
+  padding: 3px 12px;
+  color: var(--fg-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 0;
+}
+
+.segmented button:first-child { border-radius: 3px 0 0 3px; }
+.segmented button:last-child { border-radius: 0 3px 3px 0; }
+.segmented button + button { border-left: 0; }
+.segmented .activeSegment { color: var(--btn-fg); background: var(--btn-bg); }
+
+.shortcutsSection {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 0;
+}
+
+.shortcutScroller {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.shortcutGroup + .shortcutGroup { margin-top: 18px; }
+
+.groupTitle {
+  padding-bottom: 5px;
+  margin-bottom: 8px;
+  color: var(--fg-bright);
+  border-bottom: 1px solid var(--border-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.shortcutGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.shortcutItem {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.shortcutButton {
+  min-width: 0;
+  height: 34px;
+  padding: 4px 8px;
+  overflow: hidden;
+  color: var(--fg-primary);
+  background: var(--bg-tertiary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortcutButton:hover:not(:disabled) { background: var(--bg-hover); }
+
+.switchButton {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.switchButton input {
+  flex: none;
+  margin: 0;
+}
+
+.switchButton span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.switchButton:has(input:checked) {
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+}
+
+.switchButton:hover { background: var(--bg-hover); }
+.switchButton:has(input:checked):hover { background: var(--btn-bg-hover); }
+.switchButton[data-disabled='true'] { cursor: default; opacity: 0.55; }
+
+.itemAction {
+  width: 48px;
+  height: 34px;
+  padding: 0 4px;
+  color: var(--fg-muted);
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-primary);
+  font-size: 10px;
+}
+
+.itemAction:hover:not(:disabled) { color: var(--fg-bright); background: var(--bg-hover); }
+button:disabled { cursor: default; opacity: 0.55; }
+
+.emptyState {
+  padding: 28px 8px;
+  color: var(--fg-muted);
+  text-align: center;
+}
+
+.status {
+  flex: none;
+  min-height: 28px;
+  padding: 6px 12px;
+  overflow: hidden;
+  color: var(--fg-muted);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  font-size: var(--font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 940px) {
+  .shortcutGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .container { min-width: 0; }
+  .connectionGrid { grid-template-columns: 1fr; }
+  .segmented { width: fit-content; }
+  .shortcutGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 520px) {
+  .shortcutGrid { grid-template-columns: 1fr; }
+}

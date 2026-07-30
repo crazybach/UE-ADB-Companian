@@ -7,11 +7,15 @@ import styles from './CommandSection.module.css'
 interface CommandSectionProps {
   onSend: (cmd: string) => void
   autocompletePlacement?: 'top' | 'bottom'
+  secondaryActionLabel?: string
+  onSecondaryAction?: (currentInput: string) => void
 }
 
 export default function CommandSection({
   onSend,
   autocompletePlacement = 'bottom',
+  secondaryActionLabel,
+  onSecondaryAction,
 }: CommandSectionProps) {
   const [input, setInput] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -145,6 +149,15 @@ export default function CommandSection({
       <button className={styles.sendBtn} onClick={handleSend}>
         Send
       </button>
+      {secondaryActionLabel && onSecondaryAction && (
+        <button
+          className={styles.secondaryBtn}
+          onClick={() => onSecondaryAction(input.trim())}
+          type="button"
+        >
+          {secondaryActionLabel}
+        </button>
+      )}
     </div>
   )
 }

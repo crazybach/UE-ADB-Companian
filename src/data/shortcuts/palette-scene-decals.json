@@ -1,0 +1,8 @@
+{
+  "id": "palette-scene-decals",
+  "name": "Decals",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [{ "command": "showflag.decals", "waitSeconds": 0 }]
+}

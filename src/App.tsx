@@ -14,6 +14,7 @@ import SettingsScreen from './components/screens/SettingsScreen'
 import PsoDumpScreen from './components/screens/PsoDumpScreen'
 import RemoteCommandScreen from './components/screens/RemoteCommandScreen'
 import NiagaraDebuggerScreen from './components/screens/NiagaraDebuggerScreen'
+import CommandPalette2Screen from './components/screens/CommandPalette2Screen'
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/pso-dump" element={<PsoDumpScreen />} />
         <Route path="/remote-command" element={<RemoteCommandScreen />} />
         <Route path="/niagara-debugger" element={<NiagaraDebuggerScreen />} />
+        <Route path="/palette-2" element={<CommandPalette2Screen />} />
       </Routes>
     </HashRouter>
   )

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, net, shell, type OpenDialogOptions } from 'electron'
 import { execFile } from 'child_process'
+import { randomUUID } from 'crypto'
 import path from 'path'
 import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
@@ -14,6 +15,11 @@ import {
   type ObjectMemoryKind,
   type ObjectMemoryReport,
 } from '../services/object-memory'
+import type {
+  CommandShortcut,
+  CommandShortcutSaveInput,
+  CommandShortcutStep,
+} from '../types/command-shortcut'
 
 let mainWindow: BrowserWindow | null = null
 let captureWindow: BrowserWindow | null = null
@@ -32,6 +38,7 @@ let settingsWindow: BrowserWindow | null = null
 let psoDumpWindow: BrowserWindow | null = null
 let remoteCommandWindow: BrowserWindow | null = null
 let niagaraDebuggerWindow: BrowserWindow | null = null
+let commandPalette2Window: BrowserWindow | null = null
 
 let adbManager: AdbManager
 let deviceMonitor: DeviceMonitor
@@ -127,6 +134,122 @@ function getConfigPath(): string {
   return path.join(configDir, 'app_config.json')
 }
 
+function getShortcutsPath(): string {
+  return path.join(path.dirname(getConfigPath()), 'shortcuts')
+}
+
+function seedBundledCommandShortcuts(shortcutsDir: string): void {
+  const markerPath = path.join(shortcutsDir, '.palette-v1-imported')
+  if (fs.existsSync(markerPath)) return
+
+  const bundledDir = path.join(getDataPath(), 'shortcuts')
+  if (!fs.existsSync(bundledDir)) return
+
+  for (const entry of fs.readdirSync(bundledDir, { withFileTypes: true })) {
+    if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== '.json') continue
+    const destination = path.join(shortcutsDir, entry.name)
+    if (!fs.existsSync(destination)) {
+      fs.copyFileSync(path.join(bundledDir, entry.name), destination)
+    }
+  }
+  fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8')
+}
+
+function migratePaletteStateSwitches(shortcutsDir: string): void {
+  const markerPath = path.join(shortcutsDir, '.palette-v2-state-switches')
+  if (fs.existsSync(markerPath)) return
+
+  const bundledDir = path.join(getDataPath(), 'shortcuts')
+  if (!fs.existsSync(bundledDir)) return
+
+  for (const entry of fs.readdirSync(bundledDir, { withFileTypes: true })) {
+    if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== '.json') continue
+    const destination = path.join(shortcutsDir, entry.name)
+    if (!fs.existsSync(destination)) continue
+    try {
+      const existing = JSON.parse(fs.readFileSync(destination, 'utf-8')) as Record<string, unknown>
+      if (typeof existing.stateSwitch !== 'boolean') existing.stateSwitch = true
+      if (typeof existing.defaultState !== 'boolean') existing.defaultState = true
+      fs.writeFileSync(destination, JSON.stringify(existing, null, 2), 'utf-8')
+    } catch {
+      // Invalid files are handled by the normal shortcut loader.
+    }
+  }
+  fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8')
+}
+
+function normalizeShortcutStep(value: unknown): CommandShortcutStep | null {
+  if (!value || typeof value !== 'object') return null
+  const candidate = value as Record<string, unknown>
+  const command = typeof candidate.command === 'string' ? candidate.command.trim() : ''
+  if (!command) return null
+  const waitSeconds = typeof candidate.waitSeconds === 'number' && Number.isFinite(candidate.waitSeconds)
+    ? Math.max(0, candidate.waitSeconds)
+    : 0
+  return { command, waitSeconds }
+}
+
+function normalizeShortcut(value: unknown, expectedId?: string): CommandShortcut | null {
+  if (!value || typeof value !== 'object') return null
+  const candidate = value as Record<string, unknown>
+  const id = expectedId ?? (typeof candidate.id === 'string' ? candidate.id : '')
+  const name = typeof candidate.name === 'string' ? candidate.name.trim() : ''
+  const section = typeof candidate.section === 'string' ? candidate.section.trim() : ''
+  const stateSwitch = candidate.stateSwitch === true
+  const defaultState = stateSwitch && candidate.defaultState === true
+  const rawCommands = Array.isArray(candidate.commands) ? candidate.commands : []
+  const commands = rawCommands.map(normalizeShortcutStep).filter((step): step is CommandShortcutStep => Boolean(step))
+  if (!/^[a-zA-Z0-9_-]+$/.test(id) || !name || !section || !commands.length) return null
+  return { id, name, section, stateSwitch, defaultState, commands }
+}
+
+function listCommandShortcuts(): CommandShortcut[] {
+  const shortcutsDir = getShortcutsPath()
+  fs.mkdirSync(shortcutsDir, { recursive: true })
+  seedBundledCommandShortcuts(shortcutsDir)
+  migratePaletteStateSwitches(shortcutsDir)
+  const shortcuts: CommandShortcut[] = []
+
+  for (const entry of fs.readdirSync(shortcutsDir, { withFileTypes: true })) {
+    if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== '.json') continue
+    const id = path.basename(entry.name, '.json')
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) continue
+    try {
+      const shortcut = normalizeShortcut(
+        JSON.parse(fs.readFileSync(path.join(shortcutsDir, entry.name), 'utf-8')),
+        id,
+      )
+      if (shortcut) shortcuts.push(shortcut)
+    } catch {
+      // Ignore malformed shortcut files and continue loading the remaining files.
+    }
+  }
+
+  return shortcuts.sort((left, right) => (
+    left.section.localeCompare(right.section) || left.name.localeCompare(right.name)
+  ))
+}
+
+function saveCommandShortcut(input: CommandShortcutSaveInput): CommandShortcut {
+  const id = input.id || randomUUID()
+  const shortcut = normalizeShortcut({ ...input, id })
+  if (!shortcut) throw new Error('Shortcut name, section, and at least one command are required.')
+  const shortcutsDir = getShortcutsPath()
+  fs.mkdirSync(shortcutsDir, { recursive: true })
+  fs.writeFileSync(
+    path.join(shortcutsDir, `${shortcut.id}.json`),
+    JSON.stringify(shortcut, null, 2),
+    'utf-8',
+  )
+  return shortcut
+}
+
+function deleteCommandShortcut(id: string): void {
+  if (!/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error('Invalid shortcut ID.')
+  const shortcutPath = path.join(getShortcutsPath(), `${id}.json`)
+  if (fs.existsSync(shortcutPath)) fs.unlinkSync(shortcutPath)
+}
+
 async function loadWithRetry(win: BrowserWindow, url: string, retries = 10, delay = 500): Promise<void> {
   for (let i = 0; i < retries; i++) {
     try {
@@ -157,6 +280,7 @@ function broadcastStatus(): void {
   skeletalMeshMemoryWindow?.webContents.send('adb:connection-status', payload)
   staticMeshComponentMemoryWindow?.webContents.send('adb:connection-status', payload)
   settingsWindow?.webContents.send('adb:connection-status', payload)
+  commandPalette2Window?.webContents.send('adb:connection-status', payload)
 }
 
 function createMainWindow(): void {
@@ -226,6 +350,7 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === psoDumpWindow) psoDumpWindow = null
     else if (win === remoteCommandWindow) remoteCommandWindow = null
     else if (win === niagaraDebuggerWindow) niagaraDebuggerWindow = null
+    else if (win === commandPalette2Window) commandPalette2Window = null
   })
 
   return win
@@ -1193,6 +1318,38 @@ function setupIpcHandlers(): void {
     async (_event, host: string, port: string, command: string) => sendRemoteCommand(host, port, command),
   )
   ipcMain.handle('niagara-debugger:select-asset', async () => selectNiagaraAsset())
+  ipcMain.handle('shortcuts:list', async () => {
+    try {
+      return { success: true, shortcuts: listCommandShortcuts() }
+    } catch (error) {
+      return {
+        success: false,
+        shortcuts: [],
+        error: error instanceof Error ? error.message : 'Failed to load shortcuts.',
+      }
+    }
+  })
+  ipcMain.handle('shortcuts:save', async (_event, input: CommandShortcutSaveInput) => {
+    try {
+      return { success: true, shortcut: saveCommandShortcut(input) }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save shortcut.',
+      }
+    }
+  })
+  ipcMain.handle('shortcuts:delete', async (_event, id: string) => {
+    try {
+      deleteCommandShortcut(id)
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete shortcut.',
+      }
+    }
+  })
 
   // ── Logcat ──
 
@@ -1370,6 +1527,13 @@ function setupIpcHandlers(): void {
       return
     }
     niagaraDebuggerWindow = createToolWindow('Niagara Debugger', '/niagara-debugger', 920, 760)
+  })
+  ipcMain.handle('window:open-command-palette-2', async () => {
+    if (commandPalette2Window && !commandPalette2Window.isDestroyed()) {
+      commandPalette2Window.focus()
+      return
+    }
+    commandPalette2Window = createToolWindow('Command Palette 2', '/palette-2', 1080, 760)
   })
 }
 

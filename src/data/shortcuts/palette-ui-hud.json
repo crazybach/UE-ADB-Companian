@@ -1,0 +1,8 @@
+{
+  "id": "palette-ui-hud",
+  "name": "HUD",
+  "section": "UI Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [{ "command": "Slate.GameLayer.ViewportSlotVisible", "waitSeconds": 0 }]
+}

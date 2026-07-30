@@ -1,0 +1,8 @@
+{
+  "id": "palette-scene-on-screen-debug",
+  "name": "On Screen Debug",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [{ "command": "ShowFlag.OnScreenDebug", "waitSeconds": 0 }]
+}

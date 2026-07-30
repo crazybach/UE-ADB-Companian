@@ -1,0 +1,8 @@
+{
+  "id": "palette-scene-translucency",
+  "name": "Translucency",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [{ "command": "ShowFlag.Translucency", "waitSeconds": 0 }]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "palette-scene-static-meshes",
+  "name": "Static Meshes",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [{ "command": "Showflag.staticmeshes", "waitSeconds": 0 }]
+}

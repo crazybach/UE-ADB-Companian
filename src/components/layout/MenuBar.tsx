@@ -8,6 +8,7 @@ export default function MenuBar() {
 
   const handleOpenCapture = useCallback(() => window.electronAPI.openCaptureWindow(), [])
   const handleOpenPalette = useCallback(() => window.electronAPI.openPaletteWindow(), [])
+  const handleOpenPalette2 = useCallback(() => window.electronAPI.openCommandPalette2Window(), [])
   const handleOpenPreview = useCallback(() => window.electronAPI.openPreviewWindow(), [])
   const handleOpenCotfServer = useCallback(() => window.electronAPI.openCotfServerWindow(), [])
   const handleOpenCotfClient = useCallback(() => window.electronAPI.openCotfClientWindow(), [])
@@ -57,11 +58,8 @@ export default function MenuBar() {
           <button className={styles.dropdownItem} onClick={handleOpenCapture}>
             Screen Capture
           </button>
-          <button className={styles.dropdownItem} onClick={handleOpenPalette}>
-            Command Palette
-          </button>
-          <button className={styles.dropdownItem} onClick={handleOpenPreview}>
-            Local Preview
+          <button className={styles.dropdownItem} onClick={handleOpenPalette2}>
+            Command Palette 2
           </button>
           <button className={styles.dropdownItem} onClick={handleOpenCotfServer}>
             COTF Server
@@ -82,15 +80,29 @@ export default function MenuBar() {
           <button className={styles.dropdownItem} onClick={handleOpenPsoDump}>
             PSO Dump
           </button>
-          <button className={styles.dropdownItem} onClick={handleOpenRemoteCommand}>
-            Remote Command Line
-          </button>
           <button className={styles.dropdownItem} onClick={handleOpenNiagaraDebugger}>
             Niagara Debugger
           </button>
           <button className={styles.dropdownItem} onClick={handleAdvancedLaunch}>
             Advanced Launch
           </button>
+          <div className={styles.submenu}>
+            <button className={`${styles.dropdownItem} ${styles.submenuTrigger}`} type="button">
+              <span>Old</span>
+              <span aria-hidden="true">›</span>
+            </button>
+            <div className={styles.submenuDropdown}>
+              <button className={styles.dropdownItem} onClick={handleOpenPalette}>
+                Command Palette
+              </button>
+              <button className={styles.dropdownItem} onClick={handleOpenPreview}>
+                Local Preview
+              </button>
+              <button className={styles.dropdownItem} onClick={handleOpenRemoteCommand}>
+                Remote Command Line
+              </button>
+            </div>
+          </div>
           <div className={styles.divider} />
           <button
             className={styles.dropdownItem}

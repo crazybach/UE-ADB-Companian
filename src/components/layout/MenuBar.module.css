@@ -58,6 +58,34 @@
   cursor: default;
 }
 
+.submenu {
+  position: relative;
+}
+
+.submenuTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.submenuDropdown {
+  display: none;
+  position: absolute;
+  top: -1px;
+  left: 100%;
+  min-width: 180px;
+  background: var(--bg-dropdown);
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.submenu:hover .submenuDropdown,
+.submenu:focus-within .submenuDropdown {
+  display: block;
+}
+
 .divider {
   height: 1px;
   background: var(--border-primary);
