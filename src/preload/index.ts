@@ -12,6 +12,8 @@ const electronAPI = {
   listActivities: (pkg: string) => ipcRenderer.invoke('adb:list-activities', pkg),
   launchActivity: (activity: string, params: string) =>
     ipcRenderer.invoke('adb:launch-activity', activity, params),
+  injectAdvancedLaunch: (content: string, injectPath: string) =>
+    ipcRenderer.invoke('advanced-launch:inject-command-line', content, injectPath),
   captureScreenshot: () => ipcRenderer.invoke('adb:capture-screenshot'),
   listScreenshots: () => ipcRenderer.invoke('adb:list-screenshots'),
   getScreenshotDataUrl: (screenshotPath: string) =>
@@ -42,7 +44,6 @@ const electronAPI = {
   openCotfClientWindow: () => ipcRenderer.invoke('window:open-cotf-client'),
   openPullLogsWindow: () => ipcRenderer.invoke('window:open-pull-logs'),
   openAutoTestWindow: () => ipcRenderer.invoke('window:open-auto-test'),
-  openRemoteAutoTestWindow: () => ipcRenderer.invoke('window:open-remote-auto-test'),
   openTextureMemoryWindow: () => ipcRenderer.invoke('window:open-texture-memory'),
   openStaticMeshMemoryWindow: () => ipcRenderer.invoke('window:open-static-mesh-memory'),
   openSkeletalMeshMemoryWindow: () => ipcRenderer.invoke('window:open-skeletal-mesh-memory'),
@@ -56,7 +57,6 @@ const electronAPI = {
     ipcRenderer.invoke('cotf:launch-server', config),
   pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
   openAutoTestCsv: () => ipcRenderer.invoke('autotest:open-csv'),
-  openRemoteAutoTestCsv: () => ipcRenderer.invoke('remote-autotest:open-csv'),
   runAutoTestCommand: (command: string) => ipcRenderer.invoke('autotest:run-command', command),
   openTextureMemreport: () => ipcRenderer.invoke('texture-memory:open-report'),
   captureTextureMemreport: () => ipcRenderer.invoke('texture-memory:capture'),

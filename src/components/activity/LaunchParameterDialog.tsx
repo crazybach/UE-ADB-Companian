@@ -8,11 +8,13 @@ import {
 import { useAppStore } from '../../stores/app-store'
 import {
   DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
+  DEFAULT_ADVANCED_LAUNCH_INJECT_PATH,
   type AdvancedLaunchConfig,
   type AdvancedLaunchRow,
 } from '../../types/config'
 import {
   buildAdvancedLaunchParams,
+  buildUECommandLineContent,
   formatLaunchCommand,
   mergeAdvancedLaunchConfig,
 } from '../../services/advanced-launch'
@@ -137,6 +139,7 @@ export default function LaunchParameterDialog({
       || initialConfig.activity
       || DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
   )
+  const [injectPath, setInjectPath] = useState(initialConfig.injectPath)
   const [direct, setDirect] = useState<AdvancedLaunchRow[]>(initialConfig.direct)
   const [execCmds, setExecCmds] = useState<AdvancedLaunchRow[]>(initialConfig.execCmds)
   const [dpcvars, setDpcvars] = useState<AdvancedLaunchRow[]>(initialConfig.dpcvars)
@@ -144,13 +147,15 @@ export default function LaunchParameterDialog({
   const [activityDialogOpen, setActivityDialogOpen] = useState(false)
   const [selectedPackage, setSelectedPackage] = useState('')
   const [message, setMessage] = useState('')
+  const [injecting, setInjecting] = useState(false)
 
   const createCurrentConfig = useCallback((activityValue = activity): AdvancedLaunchConfig => ({
     activity: activityValue.trim() || DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
+    injectPath: injectPath.trim() || DEFAULT_ADVANCED_LAUNCH_INJECT_PATH,
     direct,
     execCmds,
     dpcvars,
-  }), [activity, direct, execCmds, dpcvars])
+  }), [activity, direct, execCmds, dpcvars, injectPath])
 
   const buildPreview = useCallback((activityValue = activity) => {
     const nextConfig = createCurrentConfig(activityValue)
@@ -184,6 +189,34 @@ export default function LaunchParameterDialog({
     })
     onLaunch(built.config.activity, built.params)
   }, [buildPreview, onLaunch, setConfig])
+
+  const handleInject = useCallback(async () => {
+    const nextConfig = createCurrentConfig()
+    const content = buildUECommandLineContent(nextConfig)
+    setInjecting(true)
+    setMessage('Writing and injecting UECommandLine.txt...')
+    setConfig({ advancedLaunch: nextConfig })
+
+    try {
+      window.electronAPI.configSave({ advancedLaunch: nextConfig }).catch(() => {
+        // Debounced config sync will retry later.
+      })
+      const result = await window.electronAPI.injectAdvancedLaunch(content, nextConfig.injectPath)
+      if (!result.success) {
+        setMessage(`Inject failed: ${result.error || 'Unknown error'}`)
+        return
+      }
+      if (result.data?.openError) {
+        setMessage(`Injected to ${result.data.remotePath}. Could not open local copy: ${result.data.openError}`)
+      } else {
+        setMessage(`Injected to ${result.data?.remotePath || nextConfig.injectPath}. Local copy opened.`)
+      }
+    } catch (error) {
+      setMessage(`Inject failed: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setInjecting(false)
+    }
+  }, [createCurrentConfig, setConfig])
 
   const handlePackageSelect = useCallback((pkg: string) => {
     setSelectedPackage(pkg)
@@ -224,6 +257,17 @@ export default function LaunchParameterDialog({
             </button>
           </div>
 
+          <div className={styles.injectRow}>
+            <label className={styles.label}>Inject path</label>
+            <input
+              className={styles.activityInput}
+              type="text"
+              value={injectPath}
+              onChange={(event) => setInjectPath(event.target.value)}
+              spellCheck={false}
+            />
+          </div>
+
           <div className={styles.sections}>
             <ParameterList
               title="Direct"
@@ -261,6 +305,9 @@ export default function LaunchParameterDialog({
           <div className={styles.footer}>
             <div className={styles.message}>{message}</div>
             <div className={styles.buttons}>
+              <button className={styles.secondaryBtn} onClick={handleInject} disabled={injecting}>
+                {injecting ? 'Injecting...' : 'Inject'}
+              </button>
               <button className={styles.secondaryBtn} onClick={handleCombine}>
                 Combine
               </button>

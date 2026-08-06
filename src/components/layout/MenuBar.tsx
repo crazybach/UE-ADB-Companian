@@ -14,7 +14,6 @@ export default function MenuBar() {
   const handleOpenCotfClient = useCallback(() => window.electronAPI.openCotfClientWindow(), [])
   const handleOpenPullLogs = useCallback(() => window.electronAPI.openPullLogsWindow(), [])
   const handleOpenAutoTest = useCallback(() => window.electronAPI.openAutoTestWindow(), [])
-  const handleOpenRemoteAutoTest = useCallback(() => window.electronAPI.openRemoteAutoTestWindow(), [])
   const handleOpenTextureMemory = useCallback(() => window.electronAPI.openTextureMemoryWindow(), [])
   const handleOpenStaticMeshMemory = useCallback(() => window.electronAPI.openStaticMeshMemoryWindow(), [])
   const handleOpenSkeletalMeshMemory = useCallback(() => window.electronAPI.openSkeletalMeshMemoryWindow(), [])
@@ -73,10 +72,6 @@ export default function MenuBar() {
           <button className={styles.dropdownItem} onClick={handleOpenAutoTest}>
             Auto Test
           </button>
-          <button className={styles.dropdownItem} onClick={handleOpenRemoteAutoTest}>
-            Remote Auto Test
-          </button>
-
           <button className={styles.dropdownItem} onClick={handleOpenPsoDump}>
             PSO Dump
           </button>

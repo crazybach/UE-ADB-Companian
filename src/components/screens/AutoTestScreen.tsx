@@ -3,6 +3,7 @@ import {
   clearAutoTestCheckpoint,
   loadAutoTestCheckpoint,
   saveAutoTestCheckpoint,
+  type AutoTestCheckpointScope,
 } from '../../services/auto-test-checkpoint'
 import styles from './AutoTestScreen.module.css'
 
@@ -12,6 +13,9 @@ interface AutoTestUiRow extends AutoTestRow {
 }
 
 export default function AutoTestScreen() {
+  const [connectionMode, setConnectionMode] = useState<'adb' | 'wifi'>('adb')
+  const [host, setHost] = useState('')
+  const [port, setPort] = useState('24002')
   const [filePath, setFilePath] = useState('')
   const [rows, setRows] = useState<AutoTestUiRow[]>([])
   const [running, setRunning] = useState(false)
@@ -24,6 +28,13 @@ export default function AutoTestScreen() {
   const runningRef = useRef(false)
   const pauseRequestedRef = useRef(false)
   const cancelWaitRef = useRef<(() => void) | null>(null)
+  const checkpointScope: AutoTestCheckpointScope = connectionMode === 'adb' ? 'adb' : 'remote'
+  const portNumber = Number(port)
+  const remoteTargetValid = host.trim().length > 0
+    && /^\d+$/.test(port)
+    && portNumber >= 1
+    && portNumber <= 65535
+  const targetValid = connectionMode === 'adb' || remoteTargetValid
 
   useEffect(() => {
     if (!running || lockScroll || currentIndex === 0) return
@@ -78,7 +89,7 @@ export default function AutoTestScreen() {
       }))
 
       const nextFilePath = result.path || ''
-      const savedCheckpoint = loadAutoTestCheckpoint('adb', nextFilePath, nextRows.length)
+      const savedCheckpoint = loadAutoTestCheckpoint(checkpointScope, nextFilePath, nextRows.length)
       const restoredRows = nextRows.map((row, index) => index < (savedCheckpoint || 0)
         ? { ...row, done: true, status: 'success' as const }
         : row)
@@ -95,7 +106,24 @@ export default function AutoTestScreen() {
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : 'Failed to open CSV.')
     }
-  }, [filePath, running])
+  }, [checkpointScope, filePath, running])
+
+  const handleConnectionModeChange = useCallback((mode: 'adb' | 'wifi') => {
+    if (running || mode === connectionMode) return
+    setConnectionMode(mode)
+    if (!filePath || rows.length === 0) return
+
+    const nextScope: AutoTestCheckpointScope = mode === 'adb' ? 'adb' : 'remote'
+    const savedCheckpoint = loadAutoTestCheckpoint(nextScope, filePath, rows.length)
+    setRows((current) => current.map((row, index) => index < (savedCheckpoint || 0)
+      ? { ...row, done: true, status: 'success' }
+      : { ...row, done: false, status: 'pending' }))
+    setCheckpointIndex(savedCheckpoint)
+    setCurrentIndex(savedCheckpoint || 0)
+    setStatusText(savedCheckpoint !== null
+      ? `Switched to ${mode === 'adb' ? 'ADB' : 'WiFi'}. Continue from row ${savedCheckpoint + 1}.`
+      : `Switched to ${mode === 'adb' ? 'ADB' : 'WiFi'}. Ready to restart.`)
+  }, [connectionMode, filePath, rows.length, running])
 
   const markRowDone = useCallback((index: number, success: boolean) => {
     setRows((current) => current.map((row, rowIndex) => (
@@ -106,7 +134,7 @@ export default function AutoTestScreen() {
   }, [])
 
   const pauseAtCheckpoint = useCallback((nextIndex: number) => {
-    saveAutoTestCheckpoint('adb', filePath, nextIndex)
+    saveAutoTestCheckpoint(checkpointScope, filePath, nextIndex)
     setCheckpointIndex(nextIndex)
     setCurrentIndex(nextIndex)
     setPauseRequested(false)
@@ -114,10 +142,10 @@ export default function AutoTestScreen() {
     runningRef.current = false
     setRunning(false)
     setStatusText(`Paused. Continue from row ${nextIndex + 1}/${rows.length}.`)
-  }, [filePath, rows.length])
+  }, [checkpointScope, filePath, rows.length])
 
   const runFrom = useCallback(async (startIndex: number, restart: boolean) => {
-    if (runningRef.current || rows.length === 0) return
+    if (runningRef.current || rows.length === 0 || !targetValid) return
 
     runningRef.current = true
     pauseRequestedRef.current = false
@@ -125,9 +153,9 @@ export default function AutoTestScreen() {
     setRunning(true)
     setCurrentIndex(startIndex)
     if (restart) {
-      clearAutoTestCheckpoint('adb', filePath)
+      clearAutoTestCheckpoint(checkpointScope, filePath)
       setCheckpointIndex(null)
-      setStatusText('Auto test restarted.')
+      setStatusText(`${connectionMode === 'adb' ? 'ADB' : 'WiFi'} auto test restarted.`)
     } else {
       setStatusText(`Continuing from row ${startIndex + 1}.`)
     }
@@ -141,11 +169,16 @@ export default function AutoTestScreen() {
       setStatusText(`Running ${index + 1}/${rows.length}: ${row.command}`)
 
       try {
-        const result = await window.electronAPI.runAutoTestCommand(row.command)
+        const result = connectionMode === 'adb'
+          ? await window.electronAPI.runAutoTestCommand(row.command)
+          : await window.electronAPI.sendRemoteCommand(host, port, row.command)
+        const errorText = 'stderr' in result
+          ? result.error || result.stderr
+          : result.error || result.response
         markRowDone(index, result.success)
         setStatusText(result.success
           ? `Completed ${index + 1}/${rows.length}.`
-          : `Command ${index + 1} failed: ${result.error || result.stderr || 'Unknown error.'}`)
+          : `Command ${index + 1} failed: ${errorText || 'Unknown error.'}`)
       } catch (error) {
         markRowDone(index, false)
         setStatusText(error instanceof Error
@@ -169,13 +202,13 @@ export default function AutoTestScreen() {
       }
     }
 
-    clearAutoTestCheckpoint('adb', filePath)
+    clearAutoTestCheckpoint(checkpointScope, filePath)
     setCheckpointIndex(null)
     setCurrentIndex(rows.length)
     setStatusText(`Auto test complete. ${rows.length}/${rows.length}`)
     runningRef.current = false
     setRunning(false)
-  }, [filePath, markRowDone, pauseAtCheckpoint, rows, running, waitForInterval])
+  }, [checkpointScope, connectionMode, filePath, host, markRowDone, pauseAtCheckpoint, port, rows, targetValid, waitForInterval])
 
   const handlePauseOrContinue = useCallback(() => {
     if (running) {
@@ -196,6 +229,50 @@ export default function AutoTestScreen() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>Auto Test</div>
+
+      <section className={styles.connectionSection}>
+        <div className={styles.sectionTitle}>Connection Mode</div>
+        <div className={styles.connectionGrid}>
+          <div className={styles.segmented}>
+            <button
+              className={connectionMode === 'adb' ? styles.activeSegment : undefined}
+              onClick={() => handleConnectionModeChange('adb')}
+              disabled={running}
+              type="button"
+            >
+              ADB
+            </button>
+            <button
+              className={connectionMode === 'wifi' ? styles.activeSegment : undefined}
+              onClick={() => handleConnectionModeChange('wifi')}
+              disabled={running}
+              type="button"
+            >
+              WiFi
+            </button>
+          </div>
+          <label className={styles.hostField}>
+            <span>Device IP</span>
+            <input
+              value={host}
+              onChange={(event) => setHost(event.target.value)}
+              placeholder="10.183.74.103"
+              disabled={running || connectionMode === 'adb'}
+              spellCheck={false}
+            />
+          </label>
+          <label className={styles.portField}>
+            <span>Port</span>
+            <input
+              value={port}
+              onChange={(event) => setPort(event.target.value)}
+              inputMode="numeric"
+              disabled={running || connectionMode === 'adb'}
+              spellCheck={false}
+            />
+          </label>
+        </div>
+      </section>
 
       <div className={styles.fileRow}>
         <input
@@ -261,14 +338,16 @@ export default function AutoTestScreen() {
           <button
             className={styles.secondaryBtn}
             onClick={handlePauseOrContinue}
-            disabled={rows.length === 0 || (running ? pauseRequested : checkpointIndex === null)}
+            disabled={rows.length === 0
+              || !targetValid
+              || (running ? pauseRequested : checkpointIndex === null)}
           >
             {running ? (pauseRequested ? 'Pausing...' : 'Pause') : 'Continue'}
           </button>
           <button
             className={styles.startBtn}
             onClick={handleRestart}
-            disabled={running || rows.length === 0}
+            disabled={running || rows.length === 0 || !targetValid}
           >
             Restart
           </button>

@@ -7,7 +7,6 @@ import CotfServerScreen from './components/screens/CotfServerScreen'
 import CotfClientScreen from './components/screens/CotfClientScreen'
 import PullLogsScreen from './components/screens/PullLogsScreen'
 import AutoTestScreen from './components/screens/AutoTestScreen'
-import RemoteAutoTestScreen from './components/screens/RemoteAutoTestScreen'
 import TextureMemoryScreen from './components/screens/TextureMemoryScreen'
 import ObjectMemoryScreen from './components/screens/ObjectMemoryScreen'
 import SettingsScreen from './components/screens/SettingsScreen'
@@ -28,7 +27,7 @@ export default function App() {
         <Route path="/cotf-client" element={<CotfClientScreen />} />
         <Route path="/pull-logs" element={<PullLogsScreen />} />
         <Route path="/auto-test" element={<AutoTestScreen />} />
-        <Route path="/remote-auto-test" element={<RemoteAutoTestScreen />} />
+        <Route path="/remote-auto-test" element={<AutoTestScreen />} />
         <Route path="/texture-memory" element={<TextureMemoryScreen />} />
         <Route path="/static-mesh-memory" element={<ObjectMemoryScreen kind="static-mesh" />} />
         <Route path="/skeletal-mesh-memory" element={<ObjectMemoryScreen kind="skeletal-mesh" />} />

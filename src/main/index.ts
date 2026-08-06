@@ -29,7 +29,6 @@ let cotfServerWindow: BrowserWindow | null = null
 let cotfClientWindow: BrowserWindow | null = null
 let pullLogsWindow: BrowserWindow | null = null
 let autoTestWindow: BrowserWindow | null = null
-let remoteAutoTestWindow: BrowserWindow | null = null
 let textureMemoryWindow: BrowserWindow | null = null
 let staticMeshMemoryWindow: BrowserWindow | null = null
 let skeletalMeshMemoryWindow: BrowserWindow | null = null
@@ -78,6 +77,19 @@ interface PullLogsResult {
     stdout: string
     stderr: string
     explorerError?: string
+  }
+}
+
+interface AdvancedLaunchInjectResult {
+  success: boolean
+  error?: string
+  data?: {
+    localPath: string
+    remotePath: string
+    command: string
+    stdout: string
+    stderr: string
+    openError?: string
   }
 }
 
@@ -365,7 +377,6 @@ function createToolWindow(title: string, hash: string, width: number, height: nu
     else if (win === cotfClientWindow) cotfClientWindow = null
     else if (win === pullLogsWindow) pullLogsWindow = null
     else if (win === autoTestWindow) autoTestWindow = null
-    else if (win === remoteAutoTestWindow) remoteAutoTestWindow = null
     else if (win === textureMemoryWindow) textureMemoryWindow = null
     else if (win === staticMeshMemoryWindow) staticMeshMemoryWindow = null
     else if (win === skeletalMeshMemoryWindow) skeletalMeshMemoryWindow = null
@@ -470,6 +481,74 @@ async function pullLogs(config: PullLogsConfig): Promise<PullLogsResult> {
       },
     }
   }
+}
+
+async function injectAdvancedLaunchCommandLine(
+  content: string,
+  injectPath: string,
+): Promise<AdvancedLaunchInjectResult> {
+  const trimmedContent = content.trim()
+  const requestedPath = injectPath.trim().replace(/\\/g, '/')
+
+  if (!trimmedContent) {
+    return { success: false, error: 'UE command line content is empty.' }
+  }
+  if (!requestedPath.startsWith('/') || !/^\/[A-Za-z0-9._/+\-]+$/.test(requestedPath)) {
+    return { success: false, error: 'Inject path must be an absolute Android path.' }
+  }
+
+  const normalizedPath = path.posix.normalize(requestedPath)
+  const remoteDir = path.posix.basename(normalizedPath).toLowerCase() === 'uecommandline.txt'
+    ? path.posix.dirname(normalizedPath)
+    : normalizedPath
+  const remotePath = path.posix.join(remoteDir, 'UECommandLine.txt')
+  const generatedDir = path.join(path.dirname(getConfigPath()), 'generated')
+  const localPath = path.join(generatedDir, 'UECommandLine.txt')
+  const command = ['adb', 'push', quoteCmdArg(localPath), quoteCmdArg(remotePath)].join(' ')
+
+  try {
+    fs.mkdirSync(generatedDir, { recursive: true })
+    fs.writeFileSync(localPath, `${trimmedContent}\n`, 'utf8')
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to write UECommandLine.txt: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+
+  let stdout = ''
+  let stderr = ''
+  let pushError = ''
+  try {
+    await execFileWithOutput('adb', ['shell', 'mkdir', '-p', remoteDir])
+    const result = await execFileWithOutput(
+      'adb',
+      ['push', localPath, remotePath],
+      { maxBuffer: 10 * 1024 * 1024 },
+    )
+    stdout = result.stdout.trim()
+    stderr = result.stderr.trim()
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string }
+    stdout = err.stdout?.trim() || ''
+    stderr = err.stderr?.trim() || ''
+    pushError = stderr || stdout || err.message
+  }
+
+  const openError = await shell.openPath(localPath)
+  const data = {
+    localPath,
+    remotePath,
+    command,
+    stdout,
+    stderr,
+    openError: openError || undefined,
+  }
+
+  if (pushError) {
+    return { success: false, error: pushError, data }
+  }
+  return { success: true, data }
 }
 
 async function selectSettingsFile(kind: SettingsFileKind): Promise<{ canceled: boolean; path?: string }> {
@@ -1213,6 +1292,14 @@ function setupIpcHandlers(): void {
     return adbManager.launchActivity(activity, params)
   })
 
+  ipcMain.handle('advanced-launch:inject-command-line', async (
+    _event,
+    content: string,
+    injectPath: string,
+  ) => {
+    return injectAdvancedLaunchCommandLine(content, injectPath)
+  })
+
   ipcMain.handle('adb:capture-screenshot', async () => {
     return adbManager.captureScreenshot()
   })
@@ -1243,10 +1330,6 @@ function setupIpcHandlers(): void {
 
   ipcMain.handle('autotest:open-csv', async () => {
     return openAutoTestCsv()
-  })
-
-  ipcMain.handle('remote-autotest:open-csv', async () => {
-    return openAutoTestCsv(remoteAutoTestWindow)
   })
 
   ipcMain.handle('autotest:run-command', async (_event, command: string) => {
@@ -1478,16 +1561,8 @@ function setupIpcHandlers(): void {
       autoTestWindow.focus()
       return
     }
-    autoTestWindow = createToolWindow('Auto Test', '/auto-test', 900, 640)
+    autoTestWindow = createToolWindow('Auto Test', '/auto-test', 940, 700)
   })
-  ipcMain.handle('window:open-remote-auto-test', async () => {
-    if (remoteAutoTestWindow && !remoteAutoTestWindow.isDestroyed()) {
-      remoteAutoTestWindow.focus()
-      return
-    }
-    remoteAutoTestWindow = createToolWindow('Remote Auto Test', '/remote-auto-test', 940, 700)
-  })
-
   ipcMain.handle('window:open-texture-memory', async () => {
     if (textureMemoryWindow && !textureMemoryWindow.isDestroyed()) {
       textureMemoryWindow.focus()

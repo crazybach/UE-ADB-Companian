@@ -60,9 +60,23 @@ interface AdvancedLaunchRow {
 
 interface AdvancedLaunchConfig {
   activity: string
+  injectPath: string
   direct: AdvancedLaunchRow[]
   execCmds: AdvancedLaunchRow[]
   dpcvars: AdvancedLaunchRow[]
+}
+
+interface AdvancedLaunchInjectResult {
+  success: boolean
+  error?: string
+  data?: {
+    localPath: string
+    remotePath: string
+    command: string
+    stdout: string
+    stderr: string
+    openError?: string
+  }
 }
 interface AutoTestRow {
   id: number
@@ -219,6 +233,7 @@ interface ElectronAPI {
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
   listActivities: (pkg: string) => Promise<AdbResult<{ activities: string[] }>>
   launchActivity: (activity: string, params: string) => Promise<AdbResult>
+  injectAdvancedLaunch: (content: string, injectPath: string) => Promise<AdvancedLaunchInjectResult>
   captureScreenshot: () => Promise<AdbResult<{ filename: string; localPath: string }>>
   listScreenshots: () => Promise<AdbResult<{ files: ScreenshotFile[] }>>
   getScreenshotDataUrl: (screenshotPath: string) => Promise<AdbResult<{ dataUrl: string }>>
@@ -239,7 +254,6 @@ interface ElectronAPI {
   openCotfClientWindow: () => Promise<void>
   openPullLogsWindow: () => Promise<void>
   openAutoTestWindow: () => Promise<void>
-  openRemoteAutoTestWindow: () => Promise<void>
   openTextureMemoryWindow: () => Promise<void>
   openStaticMeshMemoryWindow: () => Promise<void>
   openSkeletalMeshMemoryWindow: () => Promise<void>
@@ -252,7 +266,6 @@ interface ElectronAPI {
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
-  openRemoteAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
   runAutoTestCommand: (command: string) => Promise<AutoTestRunResult>
   openTextureMemreport: () => Promise<TextureMemoryResult>
   captureTextureMemreport: () => Promise<TextureMemoryResult>

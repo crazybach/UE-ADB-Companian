@@ -1,6 +1,8 @@
 import {
   DEFAULT_ADVANCED_LAUNCH_CONFIG,
   DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
+  DEFAULT_ADVANCED_LAUNCH_INJECT_PATH,
+  DEFAULT_ADVANCED_LAUNCH_PROJECT,
   type AdvancedLaunchConfig,
   type AdvancedLaunchRow,
 } from '../types/config'
@@ -56,6 +58,9 @@ export function mergeAdvancedLaunchConfig(
 
   return {
     activity,
+    injectPath: typeof savedConfig.injectPath === 'string' && savedConfig.injectPath.trim()
+      ? savedConfig.injectPath
+      : DEFAULT_ADVANCED_LAUNCH_INJECT_PATH,
     direct: mergeRows(savedConfig.direct, DEFAULT_ADVANCED_LAUNCH_CONFIG.direct),
     execCmds: mergeRows(savedConfig.execCmds, DEFAULT_ADVANCED_LAUNCH_CONFIG.execCmds),
     dpcvars: mergeRows(savedConfig.dpcvars, DEFAULT_ADVANCED_LAUNCH_CONFIG.dpcvars),
@@ -87,6 +92,26 @@ export function buildAdvancedLaunchParams(config: Pick<AdvancedLaunchConfig, Adv
     ...enabledValues(config.direct),
     buildGroupedParameter('-ExecCmds', enabledValues(config.execCmds)),
     buildGroupedParameter('-dpcvars', enabledValues(config.dpcvars)),
+  ].filter((part): part is string => Boolean(part))
+
+  return parts.join(' ')
+}
+
+function quoteCommandLineValue(value: string): string {
+  return `"${value.replace(/"/g, '\\"')}"`
+}
+
+export function buildUECommandLineContent(
+  config: Pick<AdvancedLaunchConfig, AdvancedLaunchCategory>,
+  project = DEFAULT_ADVANCED_LAUNCH_PROJECT,
+): string {
+  const execValues = enabledValues(config.execCmds)
+  const dpcvarValues = enabledValues(config.dpcvars)
+  const parts = [
+    project.trim(),
+    ...enabledValues(config.direct),
+    execValues.length > 0 ? `-ExecCmds=${quoteCommandLineValue(execValues.join(','))}` : null,
+    dpcvarValues.length > 0 ? `-dpcvars=${dpcvarValues.join(',')}` : null,
   ].filter((part): part is string => Boolean(part))
 
   return parts.join(' ')

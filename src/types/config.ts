@@ -51,6 +51,7 @@ export interface AdvancedLaunchRow {
 
 export interface AdvancedLaunchConfig {
   activity: string
+  injectPath: string
   direct: AdvancedLaunchRow[]
   execCmds: AdvancedLaunchRow[]
   dpcvars: AdvancedLaunchRow[]
@@ -59,8 +60,15 @@ export interface AdvancedLaunchConfig {
 export const DEFAULT_ADVANCED_LAUNCH_ACTIVITY =
   'net.boomgame/com.epicgames.unreal.SplashActivity'
 
+export const DEFAULT_ADVANCED_LAUNCH_INJECT_PATH =
+  '/sdcard/Android/data/net.boomgame/files/UnrealGame/tankshooter'
+
+export const DEFAULT_ADVANCED_LAUNCH_PROJECT =
+  '../../../tankshooter/tankshooter.uproject'
+
 export const DEFAULT_ADVANCED_LAUNCH_CONFIG: AdvancedLaunchConfig = {
   activity: DEFAULT_ADVANCED_LAUNCH_ACTIVITY,
+  injectPath: DEFAULT_ADVANCED_LAUNCH_INJECT_PATH,
   direct: [
     { id: 'direct-opengl', enabled: false, value: '-opengl' },
   ],
