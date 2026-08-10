@@ -3,11 +3,18 @@ import { contextBridge, ipcRenderer } from 'electron'
 interface ConnectionStatusPayload {
   status: 'disconnected' | 'connecting' | 'connected'
   device: string | null
+  devices: AdbDeviceInfo[]
+}
+
+interface AdbDeviceInfo {
+  serial: string
+  state: string
 }
 
 const electronAPI = {
   // ADB commands
-  sendCommand: (cmd: string) => ipcRenderer.invoke('adb:send-command', cmd),
+  sendCommand: (cmd: string, deviceSerial?: string | null) =>
+    ipcRenderer.invoke('adb:send-command', cmd, deviceSerial),
   listPackages: () => ipcRenderer.invoke('adb:list-packages'),
   listActivities: (pkg: string) => ipcRenderer.invoke('adb:list-activities', pkg),
   launchActivity: (activity: string, params: string) =>
@@ -23,6 +30,7 @@ const electronAPI = {
 
   // Connection
   connect: () => ipcRenderer.invoke('adb:connect'),
+  selectDevice: (serial: string) => ipcRenderer.invoke('adb:select-device', serial),
   getConnectionStatus: () => ipcRenderer.invoke('adb:get-status'),
 
   onConnectionStatus: (callback: (payload: ConnectionStatusPayload) => void) => {
@@ -57,7 +65,8 @@ const electronAPI = {
     ipcRenderer.invoke('cotf:launch-server', config),
   pullLogs: (config: Record<string, unknown>) => ipcRenderer.invoke('logs:pull', config),
   openAutoTestCsv: () => ipcRenderer.invoke('autotest:open-csv'),
-  runAutoTestCommand: (command: string) => ipcRenderer.invoke('autotest:run-command', command),
+  runAutoTestCommand: (command: string, deviceSerial?: string | null) =>
+    ipcRenderer.invoke('autotest:run-command', command, deviceSerial),
   openTextureMemreport: () => ipcRenderer.invoke('texture-memory:open-report'),
   captureTextureMemreport: () => ipcRenderer.invoke('texture-memory:capture'),
   openObjectMemreport: (kind: string) => ipcRenderer.invoke('object-memory:open-report', kind),

@@ -6,7 +6,7 @@ export function useConnectionMonitor() {
 
   useEffect(() => {
     const unsub = window.electronAPI.onConnectionStatus((payload) => {
-      setConnectionStatus(payload.status, payload.device)
+      setConnectionStatus(payload.status, payload.device, payload.devices)
     })
 
     // Query initial status on mount
@@ -14,6 +14,7 @@ export function useConnectionMonitor() {
       setConnectionStatus(
         s.status as 'disconnected' | 'connecting' | 'connected',
         s.device,
+        s.devices,
       )
     })
 

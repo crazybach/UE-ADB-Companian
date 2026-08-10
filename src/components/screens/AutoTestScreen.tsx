@@ -147,6 +147,20 @@ export default function AutoTestScreen() {
   const runFrom = useCallback(async (startIndex: number, restart: boolean) => {
     if (runningRef.current || rows.length === 0 || !targetValid) return
 
+    let operationDevice: string | null = null
+    if (connectionMode === 'adb') {
+      try {
+        operationDevice = (await window.electronAPI.getConnectionStatus()).device
+      } catch {
+        setStatusText('Failed to read the selected ADB device.')
+        return
+      }
+      if (!operationDevice) {
+        setStatusText('No ADB device is selected.')
+        return
+      }
+    }
+
     runningRef.current = true
     pauseRequestedRef.current = false
     setPauseRequested(false)
@@ -170,7 +184,7 @@ export default function AutoTestScreen() {
 
       try {
         const result = connectionMode === 'adb'
-          ? await window.electronAPI.runAutoTestCommand(row.command)
+          ? await window.electronAPI.runAutoTestCommand(row.command, operationDevice)
           : await window.electronAPI.sendRemoteCommand(host, port, row.command)
         const errorText = 'stderr' in result
           ? result.error || result.stderr

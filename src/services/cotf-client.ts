@@ -58,6 +58,9 @@ export function buildCotfClientParams(config: Pick<CotfClientConfig, 'project' |
   return parts.length > 0 ? `${parts.join(String.raw`\ `)}\\` : ''
 }
 
-export function formatCotfClientCommand(config: Pick<CotfClientConfig, 'activity' | 'project' | 'filehostip'>): string {
-  return formatLaunchCommand(config.activity, buildCotfClientParams(config))
+export function formatCotfClientCommand(
+  config: Pick<CotfClientConfig, 'activity' | 'project' | 'filehostip'>,
+  deviceSerial?: string | null,
+): string {
+  return formatLaunchCommand(config.activity, buildCotfClientParams(config), deviceSerial)
 }

@@ -54,7 +54,7 @@ export default function CommandPalette2Screen() {
     void loadShortcuts()
   }, [loadShortcuts])
 
-  const sendCommand = useCallback(async (command: string) => {
+  const sendCommand = useCallback(async (command: string, adbDeviceSerial?: string | null) => {
     if (connectionMode === 'wifi') {
       if (!host.trim()) throw new Error('Enter a device IP address for WiFi mode.')
       const result = await window.electronAPI.sendRemoteCommand(host, port, command)
@@ -62,7 +62,7 @@ export default function CommandPalette2Screen() {
       return
     }
 
-    const result = await window.electronAPI.sendCommand(command)
+    const result = await window.electronAPI.sendCommand(command, adbDeviceSerial)
     if (!result.success) throw new Error(result.error || 'ADB command failed.')
   }, [connectionMode, host, port])
 
@@ -166,6 +166,21 @@ export default function CommandPalette2Screen() {
     if (runningShortcutId) return false
     setRunningShortcutId(shortcut.id)
     let failures = 0
+    let operationDevice: string | null = null
+    if (connectionMode === 'adb') {
+      try {
+        operationDevice = (await window.electronAPI.getConnectionStatus()).device
+      } catch {
+        setRunningShortcutId(null)
+        setStatus('Failed to read the selected ADB device.')
+        return false
+      }
+      if (!operationDevice) {
+        setRunningShortcutId(null)
+        setStatus('No ADB device is selected.')
+        return false
+      }
+    }
 
     for (let index = 0; index < shortcut.commands.length; index += 1) {
       const step = shortcut.commands[index]
@@ -174,7 +189,7 @@ export default function CommandPalette2Screen() {
         : step.command
       setStatus(`${shortcut.name}: ${index + 1}/${shortcut.commands.length} - ${command}`)
       try {
-        await sendCommand(command)
+        await sendCommand(command, operationDevice)
       } catch (error) {
         failures += 1
         setStatus(`${shortcut.name}: ${error instanceof Error ? error.message : 'Command failed.'}`)
@@ -190,7 +205,7 @@ export default function CommandPalette2Screen() {
       ? `${shortcut.name} completed with ${failures} failure(s).`
       : `${shortcut.name} completed.`)
     return failures === 0
-  }, [runningShortcutId, sendCommand])
+  }, [connectionMode, runningShortcutId, sendCommand])
 
   const handleSwitchChange = useCallback(async (shortcut: CommandShortcut, checked: boolean) => {
     if (runningShortcutId) return

@@ -117,11 +117,18 @@ export function buildUECommandLineContent(
   return parts.join(' ')
 }
 
-export function formatLaunchCommand(activity: string, parameters: string): string {
+export function formatLaunchCommand(
+  activity: string,
+  parameters: string,
+  deviceSerial?: string | null,
+): string {
   const trimmedActivity = activity.trim()
+  const adb = deviceSerial
+    ? `adb -s "${deviceSerial.replace(/"/g, '\\"')}"`
+    : 'adb'
   if (!parameters.trim()) {
-    return `adb shell am start -n ${trimmedActivity}`
+    return `${adb} shell am start -n ${trimmedActivity}`
   }
 
-  return `adb shell am start -n ${trimmedActivity} --es cmdline "${parameters} "`
+  return `${adb} shell am start -n ${trimmedActivity} --es cmdline "${parameters} "`
 }

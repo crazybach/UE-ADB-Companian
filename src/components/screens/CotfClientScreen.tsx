@@ -22,6 +22,7 @@ export default function CotfClientScreen() {
   const [selectedPackage, setSelectedPackage] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [deviceSerial, setDeviceSerial] = useState<string | null>(null)
   const [preview, setPreview] = useState(() => formatCotfClientCommand(DEFAULT_COTF_CLIENT_CONFIG))
 
   useEffect(() => {
@@ -29,11 +30,15 @@ export default function CotfClientScreen() {
 
     async function loadConfig() {
       try {
-        const saved = await window.electronAPI.configLoad() as Partial<AppConfig>
+        const [saved, status] = await Promise.all([
+          window.electronAPI.configLoad() as Promise<Partial<AppConfig>>,
+          window.electronAPI.getConnectionStatus(),
+        ])
         const merged = mergeCotfClientConfig(saved.cotfClient)
         if (!cancelled) {
+          setDeviceSerial(status.device)
           setConfig(merged)
-          setPreview(formatCotfClientCommand(merged))
+          setPreview(formatCotfClientCommand(merged, status.device))
         }
       } catch {
         if (!cancelled) {
@@ -51,6 +56,10 @@ export default function CotfClientScreen() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => window.electronAPI.onConnectionStatus((status) => {
+    setDeviceSerial(status.device)
+  }), [])
 
   const saveConfig = useCallback(async (nextConfig: CotfClientConfig) => {
     await window.electronAPI.configSave({ cotfClient: nextConfig })
@@ -78,12 +87,12 @@ export default function CotfClientScreen() {
   }, [setAndSaveConfig])
 
   const handleCombine = useCallback(async () => {
-    const nextPreview = formatCotfClientCommand(config)
+    const nextPreview = formatCotfClientCommand(config, deviceSerial)
     setPreview(nextPreview)
     setError('')
     setMessage('Preview updated.')
     await saveConfig(config)
-  }, [config, saveConfig])
+  }, [config, deviceSerial, saveConfig])
 
   const handleLaunch = useCallback(async () => {
     setLaunching(true)
@@ -92,7 +101,7 @@ export default function CotfClientScreen() {
 
     try {
       const params = buildCotfClientParams(config)
-      setPreview(formatCotfClientCommand(config))
+      setPreview(formatCotfClientCommand(config, deviceSerial))
       await saveConfig(config)
       const result = await window.electronAPI.launchActivity(config.activity, params)
 
@@ -106,7 +115,7 @@ export default function CotfClientScreen() {
     } finally {
       setLaunching(false)
     }
-  }, [config, saveConfig])
+  }, [config, deviceSerial, saveConfig])
 
   if (!loaded) {
     return (

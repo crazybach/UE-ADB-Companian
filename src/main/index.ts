@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto'
 import path from 'path'
 import fs from 'fs'
 import { AdbManager } from './services/adb-manager'
-import { DeviceMonitor } from './services/device-monitor'
+import { DeviceMonitor, type DeviceInfo } from './services/device-monitor'
 import { parseAutoTestCsv, type AutoTestRow } from '../services/auto-test'
 import { parsePsoDumpCsv, parsePsoDumpLog, serializePsoDumpCsv, translatePipelineCsv, type PsoDumpMode, type PsoDumpReport } from '../services/pso-dump'
 import { DEFAULT_GLOBAL_SETTINGS } from '../types/config'
@@ -45,6 +45,8 @@ let deviceMonitor: DeviceMonitor
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 let connectionStatus: ConnectionState = 'disconnected'
 let connectedDevice: string | null = null
+let availableDevices: DeviceInfo[] = []
+let preferredDevice: string | null = null
 
 interface CotfServerConfig {
   ueCmdBinary: string
@@ -144,6 +146,29 @@ function getDataPath(): string {
 function getConfigPath(): string {
   const configDir = path.join(app.getPath('home'), '.ue_console_adb')
   return path.join(configDir, 'app_config.json')
+}
+
+function readPreferredDevice(): string | null {
+  try {
+    const config = JSON.parse(fs.readFileSync(getConfigPath(), 'utf8')) as { selectedDevice?: unknown }
+    return typeof config.selectedDevice === 'string' && config.selectedDevice.trim()
+      ? config.selectedDevice.trim()
+      : null
+  } catch {
+    return null
+  }
+}
+
+function savePreferredDevice(serial: string): void {
+  const configPath = getConfigPath()
+  fs.mkdirSync(path.dirname(configPath), { recursive: true })
+  let existing: Record<string, unknown> = {}
+  try {
+    existing = JSON.parse(fs.readFileSync(configPath, 'utf8')) as Record<string, unknown>
+  } catch {
+    // Create a new config when no readable config exists.
+  }
+  fs.writeFileSync(configPath, JSON.stringify({ ...existing, selectedDevice: serial }, null, 2))
 }
 
 function getShortcutsPath(): string {
@@ -302,7 +327,11 @@ async function loadWithRetry(win: BrowserWindow, url: string, retries = 10, dela
 }
 
 function broadcastStatus(): void {
-  const payload = { status: connectionStatus, device: connectedDevice }
+  const payload = {
+    status: connectionStatus,
+    device: connectedDevice,
+    devices: availableDevices.map((device) => ({ ...device })),
+  }
   mainWindow?.webContents.send('adb:connection-status', payload)
   captureWindow?.webContents.send('adb:connection-status', payload)
   paletteWindow?.webContents.send('adb:connection-status', payload)
@@ -428,6 +457,15 @@ function execFileWithOutput(
   })
 }
 
+function selectedAdbArgs(args: string[], deviceSerial = connectedDevice): string[] {
+  return deviceSerial ? ['-s', deviceSerial, ...args] : args
+}
+
+function formatSelectedAdbCommand(args: string[], deviceSerial = connectedDevice): string {
+  const target = deviceSerial ? ['-s', quoteCmdArg(deviceSerial)] : []
+  return ['adb', ...target, ...args.map(quoteCmdArg)].join(' ')
+}
+
 async function pullLogs(config: PullLogsConfig): Promise<PullLogsResult> {
   const androidSavedPath = config.androidSavedPath.trim()
   const destinationDir = config.destinationDir.trim() || './'
@@ -438,7 +476,7 @@ async function pullLogs(config: PullLogsConfig): Promise<PullLogsResult> {
 
   const baseDestination = path.resolve(destinationDir)
   const destinationPath = path.join(baseDestination, `Saved_${formatTimestampForFilename()}`)
-  const command = ['adb', 'pull', quoteCmdArg(androidSavedPath), quoteCmdArg(destinationPath)].join(' ')
+  const command = formatSelectedAdbCommand(['pull', androidSavedPath, destinationPath])
 
   try {
     fs.mkdirSync(destinationPath, { recursive: true })
@@ -452,7 +490,7 @@ async function pullLogs(config: PullLogsConfig): Promise<PullLogsResult> {
   try {
     const { stdout, stderr } = await execFileWithOutput(
       'adb',
-      ['pull', androidSavedPath, destinationPath],
+      selectedAdbArgs(['pull', androidSavedPath, destinationPath]),
       { maxBuffer: 100 * 1024 * 1024 },
     )
 
@@ -487,6 +525,7 @@ async function injectAdvancedLaunchCommandLine(
   content: string,
   injectPath: string,
 ): Promise<AdvancedLaunchInjectResult> {
+  const deviceSerial = connectedDevice
   const trimmedContent = content.trim()
   const requestedPath = injectPath.trim().replace(/\\/g, '/')
 
@@ -504,7 +543,7 @@ async function injectAdvancedLaunchCommandLine(
   const remotePath = path.posix.join(remoteDir, 'UECommandLine.txt')
   const generatedDir = path.join(path.dirname(getConfigPath()), 'generated')
   const localPath = path.join(generatedDir, 'UECommandLine.txt')
-  const command = ['adb', 'push', quoteCmdArg(localPath), quoteCmdArg(remotePath)].join(' ')
+  const command = formatSelectedAdbCommand(['push', localPath, remotePath], deviceSerial)
 
   try {
     fs.mkdirSync(generatedDir, { recursive: true })
@@ -520,10 +559,13 @@ async function injectAdvancedLaunchCommandLine(
   let stderr = ''
   let pushError = ''
   try {
-    await execFileWithOutput('adb', ['shell', 'mkdir', '-p', remoteDir])
+    await execFileWithOutput(
+      'adb',
+      selectedAdbArgs(['shell', 'mkdir', '-p', remoteDir], deviceSerial),
+    )
     const result = await execFileWithOutput(
       'adb',
-      ['push', localPath, remotePath],
+      selectedAdbArgs(['push', localPath, remotePath], deviceSerial),
       { maxBuffer: 10 * 1024 * 1024 },
     )
     stdout = result.stdout.trim()
@@ -966,14 +1008,17 @@ const MEMREPORT_REMOTE_ROOTS = [
   '/sdcard/Download',
 ]
 
-async function listRemoteMemreports(): Promise<string[]> {
+async function listRemoteMemreports(deviceSerial = connectedDevice): Promise<string[]> {
   const reports = new Set<string>()
 
   for (const root of MEMREPORT_REMOTE_ROOTS) {
     try {
       const { stdout } = await execFileWithOutput(
         'adb',
-        ['shell', 'find', root, '-type', 'f', '-name', '*.memreport'],
+        selectedAdbArgs(
+          ['shell', 'find', root, '-type', 'f', '-name', '*.memreport'],
+          deviceSerial,
+        ),
         { maxBuffer: 20 * 1024 * 1024 },
       )
       stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).forEach((file) => reports.add(file))
@@ -986,9 +1031,12 @@ async function listRemoteMemreports(): Promise<string[]> {
   return [...reports]
 }
 
-async function getRemoteFileSize(remotePath: string): Promise<number> {
+async function getRemoteFileSize(remotePath: string, deviceSerial = connectedDevice): Promise<number> {
   try {
-    const { stdout } = await execFileWithOutput('adb', ['shell', 'stat', '-c', '%s', remotePath])
+    const { stdout } = await execFileWithOutput(
+      'adb',
+      selectedAdbArgs(['shell', 'stat', '-c', '%s', remotePath], deviceSerial),
+    )
     return Number.parseInt(stdout.trim(), 10) || 0
   } catch {
     return 0
@@ -996,8 +1044,9 @@ async function getRemoteFileSize(remotePath: string): Promise<number> {
 }
 
 async function captureTextureMemreport(): Promise<TextureMemoryResult> {
-  const existingReports = new Set(await listRemoteMemreports())
-  const commandResult = await adbManager.sendCommand('memreport -full')
+  const deviceSerial = connectedDevice
+  const existingReports = new Set(await listRemoteMemreports(deviceSerial))
+  const commandResult = await adbManager.sendCommand('memreport -full', deviceSerial)
   if (!commandResult.success) {
     return { success: false, error: commandResult.error || 'Failed to send memreport -full.' }
   }
@@ -1007,11 +1056,11 @@ async function captureTextureMemreport(): Promise<TextureMemoryResult> {
 
   for (let attempt = 0; attempt < 60 && !remotePath; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 1500))
-    const reports = await listRemoteMemreports()
+    const reports = await listRemoteMemreports(deviceSerial)
     const candidates = reports.filter((file) => !existingReports.has(file)).sort().reverse()
 
     for (const candidate of candidates) {
-      const size = await getRemoteFileSize(candidate)
+      const size = await getRemoteFileSize(candidate, deviceSerial)
       if (size > 0 && observedSizes.get(candidate) === size) {
         remotePath = candidate
         break
@@ -1033,7 +1082,11 @@ async function captureTextureMemreport(): Promise<TextureMemoryResult> {
   const localPath = path.join(reportDir, `${formatTimestampForFilename()}_${remoteName}`)
 
   try {
-    await execFileWithOutput('adb', ['pull', remotePath, localPath], { maxBuffer: 100 * 1024 * 1024 })
+    await execFileWithOutput(
+      'adb',
+      selectedAdbArgs(['pull', remotePath, localPath], deviceSerial),
+      { maxBuffer: 100 * 1024 * 1024 },
+    )
   } catch (error) {
     const err = error as Error & { stdout?: string; stderr?: string }
     return {
@@ -1098,8 +1151,9 @@ async function openObjectMemreport(kind: ObjectMemoryKind): Promise<ObjectMemory
 }
 
 async function captureObjectMemreport(kind: ObjectMemoryKind): Promise<ObjectMemoryResult> {
-  const existingReports = new Set(await listRemoteMemreports())
-  const commandResult = await adbManager.sendCommand('memreport -full')
+  const deviceSerial = connectedDevice
+  const existingReports = new Set(await listRemoteMemreports(deviceSerial))
+  const commandResult = await adbManager.sendCommand('memreport -full', deviceSerial)
   if (!commandResult.success) {
     return { success: false, error: commandResult.error || 'Failed to send memreport -full.' }
   }
@@ -1109,11 +1163,11 @@ async function captureObjectMemreport(kind: ObjectMemoryKind): Promise<ObjectMem
 
   for (let attempt = 0; attempt < 60 && !remotePath; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 1500))
-    const reports = await listRemoteMemreports()
+    const reports = await listRemoteMemreports(deviceSerial)
     const candidates = reports.filter((file) => !existingReports.has(file)).sort().reverse()
 
     for (const candidate of candidates) {
-      const size = await getRemoteFileSize(candidate)
+      const size = await getRemoteFileSize(candidate, deviceSerial)
       if (size > 0 && observedSizes.get(candidate) === size) {
         remotePath = candidate
         break
@@ -1135,7 +1189,11 @@ async function captureObjectMemreport(kind: ObjectMemoryKind): Promise<ObjectMem
   const localPath = path.join(reportDir, `${formatTimestampForFilename()}_${kind}_${remoteName}`)
 
   try {
-    await execFileWithOutput('adb', ['pull', remotePath, localPath], { maxBuffer: 100 * 1024 * 1024 })
+    await execFileWithOutput(
+      'adb',
+      selectedAdbArgs(['pull', remotePath, localPath], deviceSerial),
+      { maxBuffer: 100 * 1024 * 1024 },
+    )
   } catch (error) {
     const err = error as Error & { stdout?: string; stderr?: string }
     return {
@@ -1220,28 +1278,61 @@ async function launchCotfServer(config: CotfServerConfig): Promise<CotfLaunchRes
 
 // ── Connection Management ─────────────────────────────────
 
-function tryAutoConnect(deviceSerial?: string): void {
-  if (connectionStatus === 'connected' || connectionStatus === 'connecting') return
-  if (!deviceMonitor.hasDevice()) return
+function activateDevice(deviceSerial: string, persistSelection: boolean): void {
+  const device = availableDevices.find((candidate) => (
+    candidate.serial === deviceSerial && candidate.state === 'device'
+  ))
+  if (!device) return
+  if (connectedDevice === deviceSerial && connectionStatus === 'connected') {
+    broadcastStatus()
+    return
+  }
 
+  if (adbManager.isRunning()) adbManager.stopLogcat()
   connectionStatus = 'connecting'
-  connectedDevice = deviceSerial || deviceMonitor.getDevices().find((d) => d.state === 'device')?.serial || null
+  connectedDevice = deviceSerial
+  adbManager.setDeviceSerial(deviceSerial)
+  if (persistSelection) {
+    preferredDevice = deviceSerial
+    try {
+      savePreferredDevice(deviceSerial)
+    } catch {
+      // Device switching remains usable if config persistence is unavailable.
+    }
+  }
   broadcastStatus()
-
   adbManager.startLogcat()
 }
 
-function handleDeviceAppeared(): void {
-  tryAutoConnect()
-}
+function handleDevicesChanged(devices: DeviceInfo[]): void {
+  const devicesChanged = devices.length !== availableDevices.length
+    || devices.some((device, index) => (
+      device.serial !== availableDevices[index]?.serial
+      || device.state !== availableDevices[index]?.state
+    ))
+  availableDevices = devices
+  const selectedStillUsable = connectedDevice
+    ? devices.some((device) => device.serial === connectedDevice && device.state === 'device')
+    : false
 
-function handleDeviceDisappeared(): void {
-  if (connectionStatus === 'connected' || connectionStatus === 'connecting') {
-    adbManager.stopLogcat()
-    connectionStatus = 'disconnected'
-    connectedDevice = null
-    broadcastStatus()
+  if (selectedStillUsable) {
+    if (devicesChanged) broadcastStatus()
+    return
   }
+
+  const wasDisconnected = connectionStatus === 'disconnected' && connectedDevice === null
+  if (adbManager.isRunning()) adbManager.stopLogcat()
+  connectedDevice = null
+  adbManager.setDeviceSerial(null)
+  connectionStatus = 'disconnected'
+
+  const usableDevices = devices.filter((device) => device.state === 'device')
+  const preferred = preferredDevice
+    ? usableDevices.find((device) => device.serial === preferredDevice)
+    : undefined
+  const nextDevice = preferred || usableDevices[0]
+  if (nextDevice) activateDevice(nextDevice.serial, false)
+  else if (devicesChanged || !wasDisconnected) broadcastStatus()
 }
 
 function doConnect(): { success: boolean; status: string; device?: string } {
@@ -1249,11 +1340,15 @@ function doConnect(): { success: boolean; status: string; device?: string } {
     return { success: true, status: 'connected', device: connectedDevice || undefined }
   }
 
-  if (!deviceMonitor.hasDevice()) {
+  const usableDevices = availableDevices.filter((device) => device.state === 'device')
+  if (usableDevices.length === 0) {
     return { success: false, status: 'disconnected' }
   }
 
-  tryAutoConnect()
+  const preferred = preferredDevice
+    ? usableDevices.find((device) => device.serial === preferredDevice)
+    : undefined
+  activateDevice((preferred || usableDevices[0]).serial, false)
   return { success: true, status: connectionStatus, device: connectedDevice || undefined }
 }
 
@@ -1271,13 +1366,32 @@ function setupIpcHandlers(): void {
   })
 
   ipcMain.handle('adb:get-status', async () => {
-    return { status: connectionStatus, device: connectedDevice }
+    return { status: connectionStatus, device: connectedDevice, devices: availableDevices }
+  })
+
+  ipcMain.handle('adb:select-device', async (_event, serial: string) => {
+    const selected = availableDevices.find((device) => device.serial === serial)
+    if (!selected) {
+      return { success: false, error: 'The selected device is no longer available.' }
+    }
+    if (selected.state !== 'device') {
+      return { success: false, error: `Device is ${selected.state}.` }
+    }
+    activateDevice(serial, true)
+    return { success: true, status: connectionStatus, device: connectedDevice }
   })
 
   // ── ADB Commands ──
 
-  ipcMain.handle('adb:send-command', async (_event, cmd: string) => {
-    return adbManager.sendCommand(cmd)
+  ipcMain.handle('adb:send-command', async (
+    _event,
+    cmd: string,
+    deviceSerial?: string | null,
+  ) => {
+    return adbManager.sendCommand(
+      cmd,
+      deviceSerial === undefined ? connectedDevice : deviceSerial,
+    )
   })
 
   ipcMain.handle('adb:list-packages', async () => {
@@ -1332,7 +1446,11 @@ function setupIpcHandlers(): void {
     return openAutoTestCsv()
   })
 
-  ipcMain.handle('autotest:run-command', async (_event, command: string) => {
+  ipcMain.handle('autotest:run-command', async (
+    _event,
+    command: string,
+    deviceSerial?: string | null,
+  ) => {
     if (!command.trim()) {
       return {
         success: false,
@@ -1342,7 +1460,10 @@ function setupIpcHandlers(): void {
       }
     }
 
-    const result = await adbManager.sendCommand(command)
+    const result = await adbManager.sendCommand(
+      command,
+      deviceSerial === undefined ? connectedDevice : deviceSerial,
+    )
     return {
       success: result.success,
       error: result.error || '',
@@ -1502,9 +1623,9 @@ function setupIpcHandlers(): void {
 
   // ── Device Monitor ──
 
+  preferredDevice = readPreferredDevice()
   deviceMonitor = new DeviceMonitor(2000)
-  deviceMonitor.on('device-appeared', handleDeviceAppeared)
-  deviceMonitor.on('device-disappeared', handleDeviceDisappeared)
+  deviceMonitor.on('devices', handleDevicesChanged)
   deviceMonitor.start()
 
   // ── Windows ──

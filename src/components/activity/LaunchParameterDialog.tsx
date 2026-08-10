@@ -123,6 +123,7 @@ export default function LaunchParameterDialog({
 }: LaunchParameterDialogProps) {
   const config = useAppStore((s) => s.config)
   const setConfig = useAppStore((s) => s.setConfig)
+  const connectedDevice = useAppStore((s) => s.connectedDevice)
 
   const initialConfig = useMemo(
     () => mergeAdvancedLaunchConfig(
@@ -162,10 +163,10 @@ export default function LaunchParameterDialog({
     const params = buildAdvancedLaunchParams(nextConfig)
     return {
       params,
-      command: formatLaunchCommand(nextConfig.activity, params),
+      command: formatLaunchCommand(nextConfig.activity, params, connectedDevice),
       config: nextConfig,
     }
-  }, [activity, createCurrentConfig])
+  }, [activity, connectedDevice, createCurrentConfig])
 
   const [preview, setPreview] = useState(() => buildPreview().command)
 

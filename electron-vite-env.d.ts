@@ -8,6 +8,12 @@ declare module '*.module.css' {
 interface ConnectionStatusPayload {
   status: 'disconnected' | 'connecting' | 'connected'
   device: string | null
+  devices: AdbDeviceInfo[]
+}
+
+interface AdbDeviceInfo {
+  serial: string
+  state: string
 }
 
 interface CotfServerConfig {
@@ -229,7 +235,7 @@ type CommandShortcutListResult = import('./src/types/command-shortcut').CommandS
 type CommandShortcutSaveResult = import('./src/types/command-shortcut').CommandShortcutSaveResult
 
 interface ElectronAPI {
-  sendCommand: (cmd: string) => Promise<AdbResult>
+  sendCommand: (cmd: string, deviceSerial?: string | null) => Promise<AdbResult>
   listPackages: () => Promise<AdbResult<{ packages: string[] }>>
   listActivities: (pkg: string) => Promise<AdbResult<{ activities: string[] }>>
   launchActivity: (activity: string, params: string) => Promise<AdbResult>
@@ -241,7 +247,13 @@ interface ElectronAPI {
   getDataPath: () => Promise<string>
 
   connect: () => Promise<{ success: boolean; status: string; device?: string }>
-  getConnectionStatus: () => Promise<{ status: string; device: string | null }>
+  selectDevice: (serial: string) => Promise<{
+    success: boolean
+    status?: string
+    device?: string | null
+    error?: string
+  }>
+  getConnectionStatus: () => Promise<ConnectionStatusPayload>
   onConnectionStatus: (callback: (payload: ConnectionStatusPayload) => void) => () => void
 
   configLoad: () => Promise<AppConfig>
@@ -266,7 +278,10 @@ interface ElectronAPI {
   launchCotfServer: (config: CotfServerConfig) => Promise<CotfLaunchResult>
   pullLogs: (config: PullLogsConfig) => Promise<PullLogsResult>
   openAutoTestCsv: () => Promise<AutoTestOpenCsvResult>
-  runAutoTestCommand: (command: string) => Promise<AutoTestRunResult>
+  runAutoTestCommand: (
+    command: string,
+    deviceSerial?: string | null,
+  ) => Promise<AutoTestRunResult>
   openTextureMemreport: () => Promise<TextureMemoryResult>
   captureTextureMemreport: () => Promise<TextureMemoryResult>
   openObjectMemreport: (kind: ObjectMemoryKind) => Promise<ObjectMemoryResult>

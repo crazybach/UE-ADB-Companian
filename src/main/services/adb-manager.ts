@@ -16,11 +16,31 @@ export class AdbManager extends EventEmitter {
   private lineBuffer: string[] = []
   private batchTimer: ReturnType<typeof setInterval> | null = null
   private screenshotDir: string
+  private deviceSerial: string | null = null
 
   constructor(screenshotDir?: string) {
     super()
     this.screenshotDir = screenshotDir || path.join(process.cwd(), 'src', 'Save', 'ScreenShots')
     fs.mkdirSync(this.screenshotDir, { recursive: true })
+  }
+
+  setDeviceSerial(serial: string | null): void {
+    this.deviceSerial = serial
+  }
+
+  getDeviceSerial(): string | null {
+    return this.deviceSerial
+  }
+
+  private targetArgs(args: string[], deviceSerial = this.deviceSerial): string[] {
+    return deviceSerial ? ['-s', deviceSerial, ...args] : args
+  }
+
+  private targetCommand(command: string, deviceSerial = this.deviceSerial): string {
+    const target = deviceSerial
+      ? ` -s "${deviceSerial.replace(/"/g, '\\"')}"`
+      : ''
+    return `adb${target} ${command}`
   }
 
   private execCommand(cmd: string): Promise<AdbResult> {
@@ -59,11 +79,14 @@ export class AdbManager extends EventEmitter {
     })
   }
 
-  sendCommand(cmd: string): Promise<AdbResult> {
+  sendCommand(cmd: string, deviceSerial = this.deviceSerial): Promise<AdbResult> {
     if (!cmd.trim()) {
       return Promise.resolve({ success: false, error: 'Empty command' })
     }
-    const adbCmd = `adb shell "am broadcast -a android.intent.action.RUN -e cmd '${cmd}'"`
+    const adbCmd = this.targetCommand(
+      `shell "am broadcast -a android.intent.action.RUN -e cmd '${cmd}'"`,
+      deviceSerial,
+    )
     return this.execCommandWithOutput(adbCmd).then((r) => ({
       success: r.success,
       error: r.error,
@@ -76,12 +99,13 @@ export class AdbManager extends EventEmitter {
     this.running = true
     this.lineBuffer = []
 
-    const process = spawn('adb', ['logcat'], {
+    const process = spawn('adb', this.targetArgs(['logcat']), {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     this.logcatProcess = process
 
     process.stdout?.on('data', (data: Buffer) => {
+      if (this.logcatProcess !== process) return
       const text = data.toString('utf-8')
       const lines = text.split('\n')
       for (const line of lines) {
@@ -144,12 +168,13 @@ export class AdbManager extends EventEmitter {
 
   async clearLogcat(): Promise<AdbResult> {
     const shouldRestart = this.running
+    const deviceSerial = this.deviceSerial
 
     if (shouldRestart) {
       this.stopLogcat()
     }
 
-    const result = await this.execCommandWithOutput('adb logcat -c')
+    const result = await this.execCommandWithOutput(this.targetCommand('logcat -c', deviceSerial))
 
     if (shouldRestart) {
       this.startLogcat()
@@ -162,9 +187,14 @@ export class AdbManager extends EventEmitter {
   }
 
   async listThirdPartyPackages(): Promise<AdbResult<{ packages: string[] }>> {
-    let result = await this.execCommandWithOutput('adb shell pm list packages -3')
+    const deviceSerial = this.deviceSerial
+    let result = await this.execCommandWithOutput(
+      this.targetCommand('shell pm list packages -3', deviceSerial),
+    )
     if (!result.success || !result.data) {
-      result = await this.execCommandWithOutput('adb shell cmd package list packages -3')
+      result = await this.execCommandWithOutput(
+        this.targetCommand('shell cmd package list packages -3', deviceSerial),
+      )
     }
 
     if (result.success && result.data) {
@@ -179,10 +209,11 @@ export class AdbManager extends EventEmitter {
   }
 
   async listPackageActivities(packageName: string): Promise<AdbResult<{ activities: string[] }>> {
+    const deviceSerial = this.deviceSerial
     const commands = [
-      `adb shell cmd package query-activities -p ${packageName}`,
-      `adb shell dumpsys package ${packageName}`,
-      `adb shell pm dump ${packageName}`,
+      this.targetCommand(`shell cmd package query-activities -p ${packageName}`, deviceSerial),
+      this.targetCommand(`shell dumpsys package ${packageName}`, deviceSerial),
+      this.targetCommand(`shell pm dump ${packageName}`, deviceSerial),
     ]
 
     for (const cmd of commands) {
@@ -231,7 +262,8 @@ export class AdbManager extends EventEmitter {
   }
 
   async launchActivity(activity: string, parameters: string): Promise<AdbResult<{ pid?: string }>> {
-    const cmd = formatLaunchCommand(activity, parameters)
+    const deviceSerial = this.deviceSerial
+    const cmd = formatLaunchCommand(activity, parameters, deviceSerial)
     const result = await this.execCommandWithOutput(cmd)
 
     if (!result.success) {
@@ -246,7 +278,9 @@ export class AdbManager extends EventEmitter {
 
     // Fallback: try pidof with the package name
     const pkgName = activity.split('/')[0]
-    const pidofResult = await this.execCommandWithOutput(`adb shell pidof ${pkgName}`)
+    const pidofResult = await this.execCommandWithOutput(
+      this.targetCommand(`shell pidof ${pkgName}`, deviceSerial),
+    )
     if (pidofResult.success && pidofResult.data) {
       return { success: true, data: { pid: pidofResult.data.trim() } }
     }
@@ -255,6 +289,7 @@ export class AdbManager extends EventEmitter {
   }
 
   async captureScreenshot(deviceSerial?: string): Promise<AdbResult<{ filename: string; localPath: string }>> {
+    const targetSerial = deviceSerial || this.deviceSerial
     const now = new Date()
     const dateStr = [
       now.getFullYear().toString(),
@@ -265,27 +300,32 @@ export class AdbManager extends EventEmitter {
       now.getMinutes().toString().padStart(2, '0'),
       now.getSeconds().toString().padStart(2, '0'),
     ].join('')
-    const serial = deviceSerial || 'device'
-    const filename = `${serial}_${dateStr}.png`
+    const serial = targetSerial || 'device'
+    const safeSerial = serial.replace(/[^a-zA-Z0-9._-]+/g, '_')
+    const filename = `${safeSerial}_${dateStr}.png`
     const remotePath = `/sdcard/${filename}`
     const localPath = path.join(this.screenshotDir, filename)
 
     // screencap
-    let result = await this.execCommand(`adb shell screencap -p ${remotePath}`)
+    let result = await this.execCommand(
+      this.targetCommand(`shell screencap -p ${remotePath}`, targetSerial),
+    )
     if (!result.success) return { success: false, error: result.error }
 
     // pull
-    result = await this.execCommand(`adb pull ${remotePath} "${localPath}"`)
+    result = await this.execCommand(
+      this.targetCommand(`pull ${remotePath} "${localPath}"`, targetSerial),
+    )
     if (!result.success) return { success: false, error: result.error }
 
     // cleanup remote
-    await this.execCommand(`adb shell rm ${remotePath}`)
+    await this.execCommand(this.targetCommand(`shell rm ${remotePath}`, targetSerial))
 
     return { success: true, data: { filename, localPath } }
   }
 
   async deleteRemoteFile(remotePath: string): Promise<AdbResult> {
-    return this.execCommand(`adb shell rm ${remotePath}`)
+    return this.execCommand(this.targetCommand(`shell rm ${remotePath}`))
   }
 
   listScreenshots(): AdbResult<{ files: { name: string; device: string; date: string; path: string }[] }> {

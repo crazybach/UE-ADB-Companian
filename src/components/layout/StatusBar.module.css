@@ -19,6 +19,29 @@
   color: var(--fg-primary);
 }
 
+.deviceSelect {
+  min-width: 180px;
+  max-width: min(420px, 45vw);
+  height: 19px;
+  padding: 0 22px 0 4px;
+  overflow: hidden;
+  color: var(--fg-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 3px;
+  font: inherit;
+  text-overflow: ellipsis;
+}
+
+.deviceSelect:focus {
+  border-color: var(--border-focus);
+  outline: none;
+}
+
+.deviceSelect:disabled {
+  opacity: 0.7;
+}
+
 .spacer {
   flex: 1;
 }
