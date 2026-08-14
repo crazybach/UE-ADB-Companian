@@ -1,0 +1,13 @@
+{
+  "id": "palette-scene-skeletal-meshes",
+  "name": "Skeletal Meshes",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [
+    {
+      "command": "Showflag.skeletalmeshes",
+      "waitSeconds": 0
+    }
+  ]
+}

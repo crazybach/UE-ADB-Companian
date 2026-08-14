@@ -1,0 +1,14 @@
+{
+  "id": "e71e4c98-cf62-48b5-9563-760216100c9e",
+  "name": "Mesh Edges",
+  "section": "Scene Visible",
+  "description": "",
+  "stateSwitch": true,
+  "defaultState": false,
+  "commands": [
+    {
+      "command": "ShowFlag.MeshEdges",
+      "waitSeconds": 0
+    }
+  ]
+}

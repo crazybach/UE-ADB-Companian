@@ -1,0 +1,14 @@
+{
+  "id": "88dc847d-b3f7-4ab2-b879-1311fd4be405",
+  "name": "Show MapBuildData",
+  "section": "Global",
+  "description": "",
+  "stateSwitch": false,
+  "defaultState": false,
+  "commands": [
+    {
+      "command": "stat mapbuilddata",
+      "waitSeconds": 1
+    }
+  ]
+}

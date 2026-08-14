@@ -1,0 +1,13 @@
+{
+  "id": "palette-scene-niagara",
+  "name": "Niagara",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [
+    {
+      "command": "ShowFlag.Niagara",
+      "waitSeconds": 0
+    }
+  ]
+}

@@ -171,8 +171,44 @@ function savePreferredDevice(serial: string): void {
   fs.writeFileSync(configPath, JSON.stringify({ ...existing, selectedDevice: serial }, null, 2))
 }
 
-function getShortcutsPath(): string {
+// Legacy per-user location, kept for migration and as a fallback when the
+// app folder is read-only.
+function getLegacyShortcutsPath(): string {
   return path.join(path.dirname(getConfigPath()), 'shortcuts')
+}
+
+function getShortcutsPath(): string {
+  // Shortcuts live under the app root (`config/shortcuts`) so the Command
+  // Palette 2 button configs travel with the app folder and can be shared
+  // with others by copying the folder or committing it to git.
+  const appRoot = app.isPackaged ? path.dirname(app.getPath('exe')) : app.getAppPath()
+  const configDir = path.join(appRoot, 'config')
+  try {
+    fs.mkdirSync(configDir, { recursive: true })
+    fs.accessSync(configDir, fs.constants.W_OK)
+    return path.join(configDir, 'shortcuts')
+  } catch {
+    // Read-only app folder (e.g. installed under Program Files).
+    return getLegacyShortcutsPath()
+  }
+}
+
+function migrateLegacyShortcuts(shortcutsDir: string): void {
+  const legacyDir = getLegacyShortcutsPath()
+  if (shortcutsDir === legacyDir || !fs.existsSync(legacyDir)) return
+  const hasShortcuts = fs.existsSync(shortcutsDir)
+    && fs.readdirSync(shortcutsDir).some((name) => name.endsWith('.json'))
+  if (hasShortcuts) return
+  // First run with the shared location: carry over the user's existing
+  // palette buttons (and seed markers) from the legacy home folder.
+  fs.mkdirSync(shortcutsDir, { recursive: true })
+  for (const entry of fs.readdirSync(legacyDir, { withFileTypes: true })) {
+    if (!entry.isFile()) continue
+    const destination = path.join(shortcutsDir, entry.name)
+    if (!fs.existsSync(destination)) {
+      fs.copyFileSync(path.join(legacyDir, entry.name), destination)
+    }
+  }
 }
 
 function seedBundledCommandShortcuts(shortcutsDir: string): void {
@@ -266,6 +302,7 @@ function normalizeShortcut(value: unknown, expectedId?: string): CommandShortcut
 function listCommandShortcuts(): CommandShortcut[] {
   const shortcutsDir = getShortcutsPath()
   fs.mkdirSync(shortcutsDir, { recursive: true })
+  migrateLegacyShortcuts(shortcutsDir)
   seedBundledCommandShortcuts(shortcutsDir)
   migratePaletteStateSwitches(shortcutsDir)
   seedCurrentCommandShortcuts(shortcutsDir)

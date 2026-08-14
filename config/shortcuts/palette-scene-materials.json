@@ -1,0 +1,13 @@
+{
+  "id": "palette-scene-materials",
+  "name": "Materials",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [
+    {
+      "command": "ShowFlag.Materials",
+      "waitSeconds": 0
+    }
+  ]
+}

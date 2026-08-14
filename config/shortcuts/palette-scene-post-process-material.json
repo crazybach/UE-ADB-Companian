@@ -1,0 +1,13 @@
+{
+  "id": "palette-scene-post-process-material",
+  "name": "Post Process Material",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [
+    {
+      "command": "ShowFlag.PostProcessMaterial",
+      "waitSeconds": 0
+    }
+  ]
+}

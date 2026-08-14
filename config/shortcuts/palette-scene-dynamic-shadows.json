@@ -1,0 +1,13 @@
+{
+  "id": "palette-scene-dynamic-shadows",
+  "name": "Dynamic Shadows",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [
+    {
+      "command": "ShowFlag.DynamicShadows",
+      "waitSeconds": 0
+    }
+  ]
+}

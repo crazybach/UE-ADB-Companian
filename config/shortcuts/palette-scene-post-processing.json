@@ -1,0 +1,13 @@
+{
+  "id": "palette-scene-post-processing",
+  "name": "Post Processing",
+  "section": "Scene Visible",
+  "stateSwitch": true,
+  "defaultState": true,
+  "commands": [
+    {
+      "command": "ShowFlag.PostProcessing",
+      "waitSeconds": 0
+    }
+  ]
+}

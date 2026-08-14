@@ -1,0 +1,14 @@
+{
+  "id": "875a5983-4a81-4c80-8385-e8abd1c8b84f",
+  "name": "20006",
+  "section": "Tutorial",
+  "description": "",
+  "stateSwitch": false,
+  "defaultState": false,
+  "commands": [
+    {
+      "command": "ReadyToRental 20006 0 0 0 0 0 0",
+      "waitSeconds": 1
+    }
+  ]
+}

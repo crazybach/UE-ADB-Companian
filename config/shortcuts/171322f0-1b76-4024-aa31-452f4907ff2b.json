@@ -1,0 +1,25 @@
+{
+  "id": "171322f0-1b76-4024-aa31-452f4907ff2b",
+  "name": "QP_Tokyo",
+  "section": "Game",
+  "stateSwitch": false,
+  "defaultState": false,
+  "commands": [
+    {
+      "command": "quickpreview main_tokyo 20006 0",
+      "waitSeconds": 5
+    },
+    {
+      "command": "infintematchtime 1",
+      "waitSeconds": 1
+    },
+    {
+      "command": "chargeultimateauto 1",
+      "waitSeconds": 1
+    },
+    {
+      "command": "addbots 5 5 20 1",
+      "waitSeconds": 1
+    }
+  ]
+}
